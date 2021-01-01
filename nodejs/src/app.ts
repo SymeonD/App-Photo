@@ -161,13 +161,18 @@ app.get("/post", async (req, res) => {
 })
 
 app.post("/post", async (req,res) => {
-  var id_post: string = await dao.createPost(
+  var today = new Date();
+  var id_post_resp: string = await dao.createPost(
     req.body["description"],
     req.body["id_user"],
     req.body["localisation"],
-    req.body["date_post"]
+    today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')
   );
-  res.status(404).send("There is currently no post with this id"); 
+  if(id_post_resp == ''){
+    res.status(401).send("The creation didn't went through"); 
+  }else{
+    res.status(201).json({id_post: id_post_resp}) 
+  }
 })
 
 // ----- Photos

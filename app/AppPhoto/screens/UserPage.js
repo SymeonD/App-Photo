@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Animated } from "react-native";
-
+import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Animated, Alert } from "react-native";
+import { TextInput } from "react-native-paper";
+import { Modal } from "../components/Modal";
+import { launchImageLibrary } from 'react-native-image-picker';
+import { append } from "express/lib/response";
 
 function UserPage({route, navigation}){
     const id_user = route.params.id;
@@ -14,6 +17,12 @@ function UserPage({route, navigation}){
 
     const [isLoadingPostNotToday, setLoadingPostNotToday] = useState(true);
     const [dataPostNotToday, setdataPostNotToday] = useState([]);
+
+    const [newPost, setNewPost] = useState(false);
+    const [imagesPost, setImagesPost] = useState([]);
+    const [descriptionPost, setDescriptionPost] = useState('');
+
+    const [imageSource, setImageSource] = useState(null);
 
     //Get the informations of the user
     useEffect(() => {
@@ -33,11 +42,13 @@ function UserPage({route, navigation}){
           .then((response) => 
             {
             if(response.status == 404){
-                setdataPostToday([
+                setdataPostToday([[
                     {
+                        _id_photo:'',
+                        _id_post:'',
                         _link_photo:'addPostToday.png'
                     }
-                ])
+                ]])
                 setLoadingPostToday(false)
                 throw('no post today')
             }else{
@@ -60,12 +71,9 @@ function UserPage({route, navigation}){
                     _link_photo:'addPostToday.png'
                 }]
                 for(let i of json){
-                    console.log(i)
                     list.push(i)
                 }
-                console.log(list)
                 photos.push(list)
-                console.log(photos)
             })
             .then(() => setdataPostToday(photos))
             .finally(() => setLoadingPostToday(false))
@@ -111,6 +119,42 @@ function UserPage({route, navigation}){
           
       }, []);
 
+    function selectImages() {
+        let options = {
+          title: 'Choose your photos',
+          maxWidth: 256,
+          maxHeight: 256,
+          storageOptions: {
+            skipBackup: true
+          },
+          includeBase64: true,
+          selectionLimit: 5,
+        };
+    
+        launchImageLibrary(options, response => {
+            if (response.didCancel) {
+              console.log('User cancelled photo picker');
+              Alert.alert('You did not select any image');
+            } else if (response.error) {
+              console.log('ImagePicker Error: ', response.error);
+            } else if (response.customButton) {
+              console.log('User tapped custom button: ', response.customButton);
+            } else {
+                let source = [];
+                if (response.assets) {
+                    for(let i of response.assets){
+                        source.push(i.uri);
+                    }
+                }else{
+                    for(let i of response){
+                        source.push(i.uri);
+                    }
+                }
+                setImageSource(source);
+            }
+          });
+      }
+
     return (
         <View style={{flex: 1, flexDirection: "column", backgroundColor: "#f8edeb"}}>
 
@@ -145,7 +189,7 @@ function UserPage({route, navigation}){
             {/* Posts */}
             <View style={styles.container_photo}>
                 {/* Line Today */}
-                <View style={{flex:4, alignItems:'center', width:'100%'}}>
+                <View style={{flex:1.80, alignItems:'center', width:'100%'}}>
                     <Image
                         source={require('../assets/Today.png')}
                         style={styles.imageText}
@@ -160,14 +204,14 @@ function UserPage({route, navigation}){
                         renderItem={({item, index, separators}) => (
                             <TouchableOpacity
                                 onPress={() => {
-                                    showImageDetails(navigation, item, dataUser)
+                                    setNewPost(showImageDetails(navigation, item, dataUser))
                                 }}
                                 style={styles.buttonImage}
                             >
                                 <Animated.Image
                                     source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._link_photo}}
                                     style={styles.image}
-                                >{console.log(item)}</Animated.Image>
+                                >{/*console.log(item)*/}</Animated.Image>
                             </TouchableOpacity>
                         )}
                     />}
@@ -203,12 +247,110 @@ function UserPage({route, navigation}){
                     />}
                 </View>
             </View>
+
+            {/* Modal add post */}
+            <Modal
+                isVisible={newPost}
+                onRequestClose={() => {
+                    setNewPost(false)
+                }}
+            >
+                <Modal.Container>
+                    <Modal.Header title='Create a daily post' />      
+                    
+                    <Modal.Body>
+                        {/* Images picker */}
+                        <TouchableOpacity
+                            onPress={() => selectImages()}
+                        >
+                            <View>
+                            {
+                                imageSource === null ? (
+                                    <Text
+                                        style={{textAlign:'center'}}
+                                    >
+                                        Pick {'\n'} an image
+                                    </Text>
+                                ) : (
+                                    <Image
+                                        source={{uri:imageSource[0]}}
+                                        style={styles.image}
+                                    />
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                        <View>
+                            <Text>Description of the day</Text>
+                            <TextInput
+                                placeholder='Today was a lovely day, i met whales as you can see.'
+                                onChangeText={(description) => setDescriptionPost(description)}
+                            />
+                        </View>
+                        
+                    </Modal.Body>  
+
+                    <Modal.Footer>
+                        <TouchableOpacity
+                            onPress={() => createPost(descriptionPost ,imageSource)}
+                        >
+                            <Text>Create</Text>
+                        </TouchableOpacity>
+                    </Modal.Footer>  
+                </Modal.Container>      
+            </Modal>
         </View>
     )
 }
 
 const showImageDetails = (navigation, photo, dataUser) => {
-    navigation.navigate('DetailPhoto', {data: photo, user: dataUser})
+    if(photo._link_photo == 'addPostToday.png'){
+        return true;
+    }else{
+        navigation.navigate('DetailPhoto', {data: photo, user: dataUser})
+        return false;
+    }
+}
+
+const createPost = (descriptionPost, imagesPost) => {
+
+    var postInformations = new FormData();
+    postInformations.append('description', descriptionPost)
+    postInformations.append('id_user', global.userId)
+    postInformations.append('localisation', "Dans le camion")
+
+    var postId = new FormData();
+
+    fetch("http://localhost:8000/post", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        },
+        body: postInformations
+    })
+    .then((resp) => {
+        if(resp.status == 401){
+            throw('An error occured during the creation of the post')
+        }else{
+            return resp.json()
+        }
+    })
+    .then((json) => {
+        postId.append('id_post', json.id_post)
+        let photos = []
+        for(let i of imagesPost){
+            let temp = {
+                uri: i,
+                type: 'image/'+i.split('.').pop(),
+                name: 'photo.'+i.split('.').pop()
+            }
+            photos.push(temp)
+        }
+        Promise.all(photos.map(photo => {
+            postId.append('photo', photo),
+            fetch('http://localhost:8000/photo',{method:'POST',headers:{'Content-Type':'multipart/form-data'},body: postId})
+        }))
+            .then((responses) => Promise.all(responses.map(res => console.log(res))))
+    })
 }
 
 const styles = StyleSheet.create({
@@ -268,12 +410,21 @@ const styles = StyleSheet.create({
         /*
         transform: [
             {
-                opacity: interpolate({
+                opacity: timerA.interpolate({
                     inputRange: [0, 1],
                     outputRange: [1, 0]
                 })
             }
-        ]
+        ],
+        */
+       /*
+        opacity: this.state.fadeAnim, // Binds directly
+        transform: [{
+        translateY: this.state.fadeAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [150, 0]  // 0 : 150, 0.5 : 75, 1 : 0
+        }),
+        }],
         */
     },
 
