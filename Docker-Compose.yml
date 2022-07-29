@@ -1,0 +1,50 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: db_app
+    restart: unless-stopped
+    logging:
+          options:
+            max-size: 10m
+            max-file: "3"
+    environment:
+          - POSTGRES_USER=${PG_USER}
+          - POSTGRES_PASSWORD=${PG_PASSWORD}
+          - POSTGRES_DB=${PG_DB}
+    #ports:
+    #  - "5432:5432"
+    volumes:
+          - ./db/db_app:/var/lib/postgresql/data
+          # copy the sql script to create tables
+          - ./db/create.sql:/docker-entrypoint-initdb.d/create.sql
+          # copy the sql script to drop tables
+          - ./db/drop.sql:/docker-entrypoint-initdb.d/drop.sql
+  application:
+    build: ./nodejs
+    container_name: application
+    restart: unless-stopped
+    environment:
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DB=${PG_DB}
+      - TOKEN=${TOKEN}
+      - MDP_ARCHITECTE=${MDP_ARCHITECTE}
+      - SALT=${SALT}
+    links:
+      - db
+    volumes:
+      - ./uploadedFiles:/app/uploads
+      - ./.well-known:/app/.well-known
+      - /etc/letsencrypt/live/projetiut.duckdns.org/privkey.pem:/etc/letsencrypt/live/projetiut.duckdns.org/privkey.pem
+      - /etc/letsencrypt/live/projetiut.duckdns.org/cert.pem:/etc/letsencrypt/live/projetiut.duckdns.org/cert.pem
+      - /etc/letsencrypt/live/projetiut.duckdns.org/chain.pem:/etc/letsencrypt/live/projetiut.duckdns.org/chain.pem
+    ports:
+      - "80:3001"
+      - "443:3001"
+
+
+volumes:
+  db_app:
+    external: true
