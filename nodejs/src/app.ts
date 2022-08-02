@@ -39,13 +39,14 @@ app.get("/users", async (req, res) => {
 // ----- User
 
 app.get("/user", async (req, res) => {
-  if(req.body["id"]){ // if searching by id
+  if(req.query.id){ // if searching by id
+    console.log("yes"+req.query.id)
     var user: User = await dao.getUserById(
-      req.body["id"]
+      req.query.id
     );
   }else{ // if searching by pseudo
     var user: User = await dao.getUserByPseudo(
-      req.body["pseudo"]
+      req.query.pseudo
     );
   }
   if (user[0] != null) {

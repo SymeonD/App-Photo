@@ -84,9 +84,9 @@ const styles = StyleSheet.create({
       },
 
       image: {
-        marginBottom: 40,
-        height: 100,
-        width: 100
+        marginBottom: 80,
+        height: 150,
+        width: 150
       },
 
       inputText: {
