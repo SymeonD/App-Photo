@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import ConnectionScreen from "./screens/Connection";
+import HomePage from "./screens/HomePage";
 import AppVrai from './AppVrai';
 
 function HomeScreen({navigation}) {
@@ -30,6 +31,7 @@ export default function App() {
         <Stack.Navigator>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="ConnectionScreen" component={ConnectionScreen} />
+            <Stack.Screen name="HomePage" component={HomePage} />
             <Stack.Screen name="AppVrai" component={AppVrai} />
         </Stack.Navigator>
     }</NavigationContainer>

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { NavigationContainer } from '@react-navigation/native';
 import {
   StyleSheet,
   Text,
@@ -22,8 +21,9 @@ export default function AppVrai() {
   const [dataUser, setDataUser] = useState([]);
 
   useEffect(() => {
-    fetch('http://192.168.43.6/users', {method:"GET"})
-      .then((response) => response.json())
+    fetch('http://192.168.8.125/users', {method:"GET"})
+      .then((response) => 
+        response.json())
       .then((json) => {
         var users = [];
         for(var i of json){

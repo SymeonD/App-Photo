@@ -60,7 +60,9 @@ app.post("/user", async (req, res) => {
   var success = await dao.createUser(
     req.body["mail"],
     req.body["password"],
-    req.body["pseudo"]
+    req.body["pseudo"],
+    req.body["profile_picture"],
+    req.body["description"]
   );
   if (success) {
     res.status(201).send("User has been added");
@@ -74,7 +76,9 @@ app.patch("/user", async (req, res) => {
     req.body["id"],
     req.body["mail"],
     req.body["password"],
-    req.body["pseudo"]
+    req.body["pseudo"],
+    req.body["profile_picture"],
+    req.body["description"]
   );
   var success = await dao.patchUser(user);
   if (success) {
@@ -152,12 +156,13 @@ app.get("/photos", async (req, res) => {
 
 app.post("/connect", async(req,res) => {
   console.log("identifiants:",req.body["pseudo"], req.body["password"])
-  var success : boolean = await dao.connect(
+  var id_user : string = await dao.connect(
     req.body["pseudo"],
     req.body["password"]
   )
-  if(success){
-    res.status(201).send("Here you go");
+  console.log("id",id_user["id_user"])
+  if(id_user != ""){
+    res.status(201).json({id:id_user["id_user"]});
   }else{
     res.status(404).send("No user found with this credentials")
   }

@@ -49,7 +49,9 @@ export class DAO {
                 res.rows[i]["id_user"],
                 res.rows[i]["mail_user"],
                 res.rows[i]["password_user"],
-                res.rows[i]["pseudo_user"]
+                res.rows[i]["pseudo_user"],
+                res.rows[i]["profile_picture_user"],
+                res.rows[i]["description_user"]
               );
               users.push(tempo);
               console.log(tempo);
@@ -80,7 +82,9 @@ export class DAO {
                     res.rows[i]["id_user"],
                     res.rows[i]["mail_user"],
                     res.rows[i]["password_user"],
-                    res.rows[i]["pseudo_user"]
+                    res.rows[i]["pseudo_user"],
+                    res.rows[i]["profile_picture_user"],
+                    res.rows[i]["description_user"]
                   );
                   users.push(tempo);
                   console.log(tempo);
@@ -109,7 +113,9 @@ export class DAO {
                     res.rows[i]["id_user"],
                     res.rows[i]["mail_user"],
                     res.rows[i]["password_user"],
-                    res.rows[i]["pseudo_user"]
+                    res.rows[i]["pseudo_user"],
+                    res.rows[i]["profile_picture_user"],
+                    res.rows[i]["description_user"]
                   );
                   users.push(tempo);
                   console.log(tempo);
@@ -125,17 +131,21 @@ export class DAO {
     async createUser(
         mail: string,
         password: string,
-        pseudo: string
+        pseudo: string,
+        profile_picture: string,
+        description: string
     ): Promise<Boolean> {
         var passwordHash: string;
         passwordHash = this.creationHash(password);
 
         var query: string =
-        "INSERT INTO users values(default, $1,$2,$3)";
+        "INSERT INTO users values(default, $1,$2,$3,$4,$5)";
         const values: string[] = [
         mail,
         passwordHash,
-        pseudo
+        pseudo,
+        profile_picture,
+        description
         ];
         for(var i=0;i<values.length;i++){ // Si un des éléments est null on retourne faux
             if(values[i] == ""){
@@ -170,7 +180,7 @@ export class DAO {
           user._pseudo_user
         ];
         var query: string =
-          "UPDATE users SET mail_user=COALESCE($2,mail_user),password_user=COALESCE($3,password_user),pseudo_user=COALESCE($4,pseudo_user) WHERE id_user=$1";
+          "UPDATE users SET mail_user=COALESCE($2,mail_user),password_user=COALESCE($3,password_user),pseudo_user=COALESCE($4,pseudo_user),profile_picture_user=COALESCE($5,profile_picture_user),description_user=COALESCE($6,description_user) WHERE id_user=$1";
         return await this._pool
           .query(query, values)
           .then((res) => {
@@ -328,20 +338,19 @@ export class DAO {
     // ---- Connect
     //TODO: Add token access
 
-    async connect(pseudo: string, password: string): Promise<boolean>{
+    async connect(pseudo: string, password: string): Promise<string>{
         const query :string = 
-            "SELECT * FROM users WHERE pseudo_user=$1 and password_user=$2"
+            "SELECT id_user FROM users WHERE pseudo_user=$1 and password_user=$2"
         const passwordHash = this.creationHash(password);
         const values = [pseudo, passwordHash];
         
         return await this._pool
             .query(query, values)
             .then((res) => {
-                console.log(res.rows)
                 if(res.rows.length == 0){
-                    return false;
+                    return "";
                 }else{
-                    return true;
+                    return res.rows[0];
                 }
             })
             .catch((e) => {return false})

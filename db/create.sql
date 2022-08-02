@@ -2,7 +2,9 @@ create table if not exists users(
     id_user UUID unique default gen_random_uuid(),
     mail_user varchar unique,
     password_user varchar,
-    pseudo_user varchar unique
+    pseudo_user varchar unique,
+    profile_picture_user varchar,
+    description_user varchar
 );
 
 create table if not exists posts(

@@ -1,8 +1,6 @@
 import React, {useState} from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 
-const [isLoading, setLoading] = useState(true);
-
 function ConnectionScreen({navigation}) {
     const [pseudo, setPseudo] = useState('');
     const [password, setPassword] = useState('');
@@ -37,45 +35,50 @@ function ConnectionScreen({navigation}) {
     
             <TouchableOpacity 
                 style={styles.loginBtn}
-                onPress={() => {
-                    isLoading ? (Connect(pseudo, password) ? navigation.goBack() : "") : ""}}
-                >
-                <Text style={styles.loginText}>LOGIN</Text>
+                onPress={() => (Connect(pseudo, password, navigation))}>
+                <Text style={styles.loginText}>Login / Register</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity>
+                <Text style={styles.forgot_button}
+                onPress={() => navigation.navigate("HomePage")}> Enter as visitor</Text>
             </TouchableOpacity>
 
         </View>
     )
 }
 
-const Connect = (pseudo, password) => {
+const Connect = (pseudo, password, navigation) => {
 
     var userCredentials = new URLSearchParams();
     userCredentials.append('pseudo', pseudo);
     userCredentials.append('password', password);
 
-    fetch("http://192.168.1.196/connect", {
+    fetch("http://192.168.8.125/connect", {
         method:'POST', 
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
         },
         body: userCredentials.toString() //Don't forget the toString()
     })
-        .then((response) => {
-            if(response.status == 201){
-                return true
+        .then((res) => {
+            if(res.status != 401){
+                return res.json();
             }else{
-                return false
-            }})
+               throw new Error(res.status);
+            }
+        })
+        .then((data) => {
+            navigation.navigate("HomePage", {id:data.id})
+        })
         .catch((error) => {
-            console.log(error)
-            return false})
-        .finally(() => setLoading(false))
+            console.log(error)})
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#fff",
+        backgroundColor: "#f8edeb",
         alignItems: "center",
         justifyContent: "center",
       },
@@ -87,7 +90,7 @@ const styles = StyleSheet.create({
       },
 
       inputText: {
-        backgroundColor: "#FFC0CB",
+        backgroundColor: "#ffb5a7",
         borderRadius: 30,
         width: "70%",
         height: 45,
@@ -99,6 +102,7 @@ const styles = StyleSheet.create({
       forgot_button: {
         height: 30,
         marginBottom: 30,
+        color: '#f9dcc4'
       },
 
       loginBtn: {
@@ -108,7 +112,9 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         marginTop: 40,
-        backgroundColor: "#FF1493",
+        backgroundColor: "#ffb5a7",
+        marginBottom: 20,
+        color: '#f9dcc4'
       },
 })
 
