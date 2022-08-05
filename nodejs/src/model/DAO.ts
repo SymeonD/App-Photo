@@ -209,13 +209,43 @@ export class DAO {
     
     // ----- Posts
 
-    async getUserPosts(id : string): Promise<Post[]> {
+    async getUserPostsById(id : string): Promise<Post[]> {
         var posts: Post[] = [];
         var values: string[] = [
             id
         ];
         var query: string = 
             "SELECT * FROM posts WHERE id_user=$1";
+        return await this._pool
+            .query(query, values)
+            .then((res) => {
+                var i;
+                for (i in res.rows) {
+                  var tempo: Post = new Post(
+                    res.rows[i]["id_post"],
+                    res.rows[i]["description_post"],
+                    res.rows[i]["id_user"],
+                    res.rows[i]["localisation_post"],
+                    res.rows[i]["date_post"]
+                  );
+                  posts.push(tempo);
+                  console.log(tempo);
+                }
+        
+                return posts;
+              })
+              .catch((e) => {
+                return posts;
+              });
+    }
+
+    async getUserPostsByDate(id : string, date: string): Promise<Post[]> {
+        var posts: Post[] = [];
+        var values: string[] = [
+            id, date
+        ];
+        var query: string = 
+            "SELECT * FROM posts WHERE id_user=$1 and date_post=$2";
         return await this._pool
             .query(query, values)
             .then((res) => {
@@ -307,7 +337,24 @@ export class DAO {
 
     // ---- Photos
 
-    async getPhotos(id : string): Promise<Photo[]> {
+    async getNumPhoto(id : string): Promise<number>{
+        var values: string[] = [
+            id
+        ];
+        var query: string =
+            "SELECT count(*) FROM photos WHERE id_post=$1";
+        return await this._pool
+            .query(query, values)
+            .then((res) => {
+                console.log(parseInt(res.rows[0].count))
+                return parseInt(res.rows[0].count);
+            })
+            .catch((e) => {
+                return 1;
+            });
+    }
+
+    async getPhotosById(id : string): Promise<Photo[]> {
         var photos: Photo[] = [];
         var values: string[] = [
             id
@@ -324,6 +371,7 @@ export class DAO {
                         res.rows[i]["id_post"],
                         res.rows[i]["link_photo"]
                     )
+                    photos.push(tempo)
                 }
                 return photos;
             })
@@ -334,6 +382,20 @@ export class DAO {
 
     // ---- Photo
 
+    async postPhoto(id_post: string, link_photo: string): Promise<Boolean>{
+        const values = [id_post, link_photo];
+        const query :string=
+            "INSERT INTO photos VALUES(default,$1,$2)";
+        return await this._pool
+            .query(query, values)
+            .then((res) => {
+                return true;
+            })
+            .catch((e) => {
+                console.error(e.stack);
+                return false;
+            });
+    };
 
     // ---- Connect
     //TODO: Add token access

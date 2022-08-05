@@ -41,9 +41,9 @@ services:
       - /etc/letsencrypt/live/projetiut.duckdns.org/cert.pem:/etc/letsencrypt/live/projetiut.duckdns.org/cert.pem
       - /etc/letsencrypt/live/projetiut.duckdns.org/chain.pem:/etc/letsencrypt/live/projetiut.duckdns.org/chain.pem
     ports:
-      - "80:3001"
-      - "443:3001"
-
+      #- "80:3001"
+      #- "443:3001"
+      - "8000:3001"
 
 volumes:
   db_app:

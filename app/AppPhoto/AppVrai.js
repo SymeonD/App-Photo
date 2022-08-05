@@ -21,8 +21,8 @@ export default function AppVrai() {
   const [dataUser, setDataUser] = useState([]);
 
   useEffect(() => {
-    fetch('http://192.168.8.125/users', {method:"GET"})
-      .then((response) => 
+    fetch('http://localhost:8000/users', {method:"GET"})
+      .then((response) =>
         response.json())
       .then((json) => {
         var users = [];

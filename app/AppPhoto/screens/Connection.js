@@ -54,7 +54,7 @@ const Connect = (pseudo, password, navigation) => {
     userCredentials.append('pseudo', pseudo);
     userCredentials.append('password', password);
 
-    fetch("http://192.168.8.125/connect", {
+    fetch("http://localhost:8000/connect", {
         method:'POST', 
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
