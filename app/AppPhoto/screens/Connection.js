@@ -7,6 +7,9 @@ function ConnectionScreen({navigation}) {
     const [pseudo, setPseudo] = useState('');
     const [password, setPassword] = useState('');
 
+    const [mail, setMail] = useState('');
+    const [passwordConfirm, setPasswordConfirm] = useState('');
+
     const [newUser, setNewUser] = useState(false);
     
     const [imageSource, setImageSource] = useState(null);
@@ -18,7 +21,8 @@ function ConnectionScreen({navigation}) {
           maxHeight: 256,
           storageOptions: {
             skipBackup: true
-          }
+          },
+          includeBase64: true
         };
     
         launchImageLibrary(options, response => {
@@ -37,7 +41,6 @@ function ConnectionScreen({navigation}) {
                     source = { uri: response.uri };
                 }
                 setImageSource(source.uri);
-                console.log(imageSource)
             }
           });
       }
@@ -81,22 +84,34 @@ function ConnectionScreen({navigation}) {
                         {/* Mail */}
                         <TextInput
                             style={PopupStyles.inputText}
+                            autoCapitalize='none'
+                            autoComplete='email'
+                            keyboardType='email-address'
                             placeholder='Mail.'
+                            onChangeText={(mail) => setMail(mail)}
                         />
                         {/* Pseudo */}
                         <TextInput
                             style={PopupStyles.inputText}
+                            autoCapitalize='none'
                             placeholder='Pseudo.'
+                            onChangeText={(pseudo) => setPseudo(pseudo)}
                         />
                         {/* Password */}
                         <TextInput
                             style={PopupStyles.inputText}
+                            autoCapitalize='none'
                             placeholder='Password.'
+                            secureTextEntry={true}
+                            onChangeText={(password) => setPassword(password)}
                         />
                         {/* Confirm password */}
                         <TextInput
                             style={PopupStyles.inputText}
+                            autoCapitalize='none'
                             placeholder='Confirm password.'
+                            secureTextEntry={true}
+                            onChangeText={(passwordConfirm) => setPasswordConfirm(passwordConfirm)}
                         />
                     </Modal.Body>
 
@@ -104,7 +119,9 @@ function ConnectionScreen({navigation}) {
                         {/* Register button */}
                         <TouchableOpacity
                             style={PopupStyles.buttonRegister}
-                            onPress={() => setNewUser(!newUser)}
+                            onPress={() => {
+                                Register(imageSource, mail, pseudo, password, navigation)
+                            }}
                         >
                             <Text style={styles.loginText}>
                                 Register
@@ -129,6 +146,7 @@ function ConnectionScreen({navigation}) {
                 placeholder="Pseudo."
                 placeholderTextColor="#003f5c"
                 secureTextEntry={false}
+                autoCapitalize='none'
                 onChangeText={(pseudo) => setPseudo(pseudo)}
             />
 
@@ -137,6 +155,7 @@ function ConnectionScreen({navigation}) {
                 placeholder="Password."
                 placeholderTextColor="#003f5c"
                 secureTextEntry={true}
+                autoCapitalize='none'
                 onChangeText={(password) => setPassword(password)}
             />
 
@@ -192,13 +211,44 @@ const Connect = (pseudo, password, navigation) => {
         .then((res) => {
             if(res.status != 401){
                 return res.json();
-            }else if(res.status == 401){
-                setModalVisible(!modalVisible)
             }else{
                 throw new Error(res.status);
             }
         })
         .then((data) => {
+            if(data.id){
+                navigation.navigate("UserPage", {id:data.id})
+            }
+        })
+        .catch((error) => {
+            console.log(error)})
+}
+
+const Register = (profile_pic, mail, pseudo, password, navigation) => {
+    var profile_pic_file = {
+        uri: profile_pic,
+        type: 'image/jpeg',
+        name: 'profile_pic.jpg'
+    }
+    var userInformations = new FormData();
+    userInformations.append('profile_picture', profile_pic_file);
+    userInformations.append('mail', mail);
+    userInformations.append('pseudo', pseudo);
+    userInformations.append('password', password);
+
+    fetch('http://localhost:8000/user', {
+        method: 'POST',
+        body: userInformations,
+    })
+        .then((res) => {
+            if(res.status != 401){
+                return res.json();
+            }else{
+                throw new Error(res.status);
+            }
+        })
+        .then((data) => {
+            console.log(data)
             if(data.id){
                 navigation.navigate("UserPage", {id:data.id})
             }

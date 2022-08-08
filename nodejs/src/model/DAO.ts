@@ -134,13 +134,14 @@ export class DAO {
         pseudo: string,
         profile_picture: string,
         description: string
-    ): Promise<Boolean> {
+    ): Promise<string> {
         var passwordHash: string;
         passwordHash = this.creationHash(password);
-
+        let id_user = uuidv4();
         var query: string =
-        "INSERT INTO users values(default, $1,$2,$3,$4,$5)";
+        "INSERT INTO users values($1,$2,$3,$4,$5,$6)";
         const values: string[] = [
+        id_user,
         mail,
         passwordHash,
         pseudo,
@@ -149,13 +150,13 @@ export class DAO {
         ];
         for(var i=0;i<values.length;i++){ // Si un des éléments est null on retourne faux
             if(values[i] == ""){
-                return false;
+                return "";
             }
         }
         return await this._pool
         .query(query, values)
         .then((res) => {
-            return true;
+            return id_user;
         })
         .catch((e) => {
             if (e.code == 23505) {

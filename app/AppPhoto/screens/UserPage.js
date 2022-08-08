@@ -30,14 +30,26 @@ function UserPage({route, navigation}){
     useEffect(() => {
         fetch('http://localhost:8000/posts?id='+id_user+'&date='+new Date().toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'), {method:"GET"})
           .then((response) => 
-            response.json())
+            {
+            if(response.status == 404){
+                throw('no user')
+            }else{
+                return response.json()
+            }})
           .then((json) => {
             let photos = [];
             fetch('http://localhost:8000/photos?id='+json[0]._id_post, {method:"GET"})
-            .then((response) => response.json())
+            .then((response) => {
+                if(response.status == 404){
+                    throw('no photos')
+                }else{
+                    return response.json()
+                }
+            })
             .then((json) => photos.push(json))
             .then(() => setdataPostToday(photos))
-            .finally(() => setLoadingPostToday(false));
+            .finally(() => setLoadingPostToday(false))
+            .catch((e) => console.error(e))
           })
           .catch((error) => console.error(error))
           
@@ -46,7 +58,14 @@ function UserPage({route, navigation}){
     //Get previous days posts and photos
     useEffect(() => {
         fetch('http://localhost:8000/posts?id='+id_user, {method:"GET"})
-          .then((responsePost) => responsePost.json())
+          .then((responsePost) => 
+            {
+                if(responsePost.status == 404){
+                    throw('no posts')
+                }else{
+                    return responsePost.json()
+                }
+            })
           .then((jsonPost) => { //json of all posts
             let photos = [];
             let urls = [];
@@ -78,7 +97,7 @@ function UserPage({route, navigation}){
             {/* Header */}
             <View style={{alignItems: "center", height:50}}>
                 <Image
-                    style={styles.image} 
+                    style={styles.imageTop} 
                     source={require("../assets/log2.png")}
                 />
             </View>
@@ -104,40 +123,47 @@ function UserPage({route, navigation}){
             </View>
 
             {/* Posts */}
-            <View>
+            <View style={styles.container_photo}>
                 {/* Add line Today */}
-                <Text>
-                    Today
-                </Text>
-                {isLoadingPostToday ? <Text>Loading...</Text> : 
-                <FlatList
-                    horizontal={true} 
-                    showsHorizontalScrollIndicator={false} 
-                    data={dataPostToday[0]}
-                    renderItem={({item, index, separators}) => (
-                        <Image
-                            source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._link_photo}}
-                            style={styles.image}
-                        >{/*console.log(item)*/}</Image>
-                    )}
-                />}
-                {/* Add line not today */}
-                <Text>
-                    Not today
-                </Text>
-                {isLoadingPostNotToday ? <Text>Loading...</Text> : 
-                <FlatList
-                    horizontal={true} 
-                    showsHorizontalScrollIndicator={false} 
-                    data={dataPostNotToday}
-                    renderItem={({item, index, separators}) => (
-                        <Image
-                            source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._link_photo}}
-                            style={styles.image}
-                        >{/*console.log(item)*/}</Image>
-                    )}
-                />}
+                <View style={{flex:1, alignItems:'center'}}>
+                    <Image
+                        source={require('../assets/Today.png')}
+                        style={styles.imageText}
+                    />
+                    {isLoadingPostToday ? <Text>Loading...</Text> : 
+                    <FlatList
+                        horizontal={true} 
+                        showsHorizontalScrollIndicator={false}
+                        data={dataPostToday[0]}
+                        renderItem={({item, index, separators}) => (
+                            <Image
+                                source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._link_photo}}
+                                style={styles.image}
+                            >{/*console.log(item)*/}</Image>
+                        )}
+                    />}
+                </View>
 
+                {/* Add line not today */}
+                <View style={{flex:4, alignItems:'center'}}>
+                    <Image
+                        source={require('../assets/notToday.png')}
+                        style={styles.imageText}
+                    />
+                    {isLoadingPostNotToday ? <Text>Loading...</Text> : 
+                    <FlatList
+                        horizontal={false} 
+                        numColumns={2}
+                        showsHorizontalScrollIndicator={false} 
+                        data={dataPostNotToday}
+                        renderItem={({item, index, separators}) => (
+                            <Image
+                                source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._link_photo}}
+                                style={styles.image}
+                            >{/*console.log(item)*/}</Image>
+                        )}
+                    />}
+                </View>
             </View>
         </View>
     )
@@ -145,16 +171,21 @@ function UserPage({route, navigation}){
 
 const styles = StyleSheet.create({
     container_user:{
-        flex: 8,
+        flex: 1,
         flexDirection: "column",
         backgroundColor: "#f8edeb",
         alignItems: "flex-start",
         justifyContent: "space-between",
-        marginLeft: 30
+        marginLeft: 10
     },
 
     container_text_user:{
         margin: 30,
+    },
+
+    container_photo: {
+        flex: 4,
+        alignItems: 'center'
     },
 
     pseudo:{
@@ -180,8 +211,21 @@ const styles = StyleSheet.create({
 
     image: {
         marginTop: 0,
-        height: 50,
         width: 50,
+        height: 50
+    },
+
+    imageTop: {
+        marginTop: 0,
+        width: 50,
+        height: 50,
+    },
+
+    imageText: {
+        marginTop: 0,
+        width: '100%',
+        height: 30,
+        aspectRatio: 2076/171
     },
 })
 

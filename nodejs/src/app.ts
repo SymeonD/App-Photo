@@ -70,19 +70,31 @@ app.post("/user", async (req, res) => {
     url_profile_picture = "profile_picture_"+req.body["pseudo"]+"."+profile_picture.name.split('.').pop();
     profile_picture.mv("./uploads/"+ req.body["pseudo"] + "/" + url_profile_picture);
   }
-  var success = await dao.createUser(
+  var id_user : string = await dao.createUser(
     req.body["mail"],
     req.body["password"],
     req.body["pseudo"],
     url_profile_picture,
     req.body["description"]
   );
-  if (success) {
-    res.status(201).send("User has been added");
+  if (id_user != "") {
+    res.status(201).json({id:id_user});
   } else {
     res.status(500).send("User hasn't been added");
   }
 });
+
+app.post("/connect", async(req,res) => {
+  var id_user : string = await dao.connect(
+    req.body["pseudo"],
+    req.body["password"]
+  )
+  if(id_user != ""){
+    res.status(201).json({id:id_user["id_user"]});
+  }else{
+    res.status(404).send("No user found with this credentials")
+  }
+})
 
 app.patch("/user", async (req, res) => {
   var user : User = new User(
