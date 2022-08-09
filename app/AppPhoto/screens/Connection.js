@@ -1,7 +1,9 @@
 import React, {useState} from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Colors } from 'react-native';
 import { Modal } from "../components/Modal";
 import { launchImageLibrary } from 'react-native-image-picker';
+//import { TextInput } from 'react-native-paper';
+//import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 function ConnectionScreen({navigation}) {
     const [pseudo, setPseudo] = useState('');
@@ -13,6 +15,8 @@ function ConnectionScreen({navigation}) {
     const [newUser, setNewUser] = useState(false);
     
     const [imageSource, setImageSource] = useState(null);
+
+    const [isPasswordHidden, setPasswordHidden] = useState(true);
 
     function selectImage() {
         let options = {
@@ -121,6 +125,7 @@ function ConnectionScreen({navigation}) {
                             style={PopupStyles.buttonRegister}
                             onPress={() => {
                                 Register(imageSource, mail, pseudo, password, navigation)
+                                    .then(() => setNewUser(!newUser))
                             }}
                         >
                             <Text style={styles.loginText}>
@@ -130,7 +135,9 @@ function ConnectionScreen({navigation}) {
                         {/* Cancel */}
                         <TouchableOpacity>
                             <Text style={PopupStyles.cancel_button}
-                            onPress={() => {setNewUser(!newUser)}}>Cancel</Text>
+                            onPress={() => {
+                                setNewUser(!newUser)
+                            }}>Cancel</Text>
                         </TouchableOpacity>
                     </Modal.Footer>
                 </Modal.Container>
@@ -154,8 +161,15 @@ function ConnectionScreen({navigation}) {
                 style={styles.inputText}
                 placeholder="Password."
                 placeholderTextColor="#003f5c"
-                secureTextEntry={true}
+                secureTextEntry={isPasswordHidden}
                 autoCapitalize='none'
+                //right={
+                //    <TextInput.Icon
+                //      name={() => <MaterialCommunityIcons name={isPasswordHidden ? "eye-off" : "eye"} size={28} color={'black'} />} // where <Icon /> is any component from vector-icons or anything else
+                //      onPress={() => { isPasswordHidden ? setPasswordHidden(false) : setPasswordHidden(true) }}
+                //    />
+                //  }
+                //right={<TextInput.Icon name="eye" />}                
                 onChangeText={(password) => setPassword(password)}
             />
 
@@ -167,7 +181,7 @@ function ConnectionScreen({navigation}) {
                 <TouchableOpacity 
                     style={{flexDirection:'row', width:'40%'}}
                     onPress={() => (setNewUser(!newUser))}>
-                    <View style={styles.loginBtn}>
+                    <View style={styles.registerBtn}>
                         <Text style={styles.loginText}>Register</Text>
                     </View>
                     <View style={styles.triangleCornerLeft} />
@@ -178,7 +192,7 @@ function ConnectionScreen({navigation}) {
                     onPress={() => (Connect(pseudo, password, navigation))}
                 >
                     <View style={styles.triangleCornerRight} />
-                    <View style={styles.registerBtn}>
+                    <View style={styles.loginBtn}>
                         <Text style={styles.loginText}>Login</Text>
                     </View>
                 </TouchableOpacity>
@@ -217,6 +231,7 @@ const Connect = (pseudo, password, navigation) => {
         })
         .then((data) => {
             if(data.id){
+                global.userId = data.id;
                 navigation.navigate("UserPage", {id:data.id})
             }
         })
@@ -250,6 +265,7 @@ const Register = (profile_pic, mail, pseudo, password, navigation) => {
         .then((data) => {
             console.log(data)
             if(data.id){
+                global.userId = data.id;
                 navigation.navigate("UserPage", {id:data.id})
             }
         })
@@ -291,7 +307,7 @@ const styles = StyleSheet.create({
         color:'black'
       },    
 
-      loginBtn: {
+      registerBtn: {
         width:'90%',
         borderBottomLeftRadius: 25,
         borderTopLeftRadius: 25,
@@ -301,6 +317,7 @@ const styles = StyleSheet.create({
         marginTop: 40,
         backgroundColor: "#ffb5a7",
         marginBottom: 20,
+        marginLeft: 5,
         color: '#f9dcc4'
       },
 
@@ -326,9 +343,10 @@ const styles = StyleSheet.create({
         borderBottomWidth: 50,
         borderLeftColor: "transparent",
         borderBottomColor: "#ffb5a7",
+        marginLeft: -5,
       },
 
-      registerBtn: {
+      loginBtn: {
         width:'90%',
         borderBottomRightRadius: 25,
         borderTopRightRadius: 25,

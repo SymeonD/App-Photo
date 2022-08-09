@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, FlatList } from "react-native";
+import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Animated } from "react-native";
 
 
 function UserPage({route, navigation}){
     const id_user = route.params.id;
+    const isSameUser = (global.userId == id_user);
 
     const [isLoadingUser, setLoadingUser] = useState(true);
     const [dataUser, setDataUser] = useState([]);
@@ -32,7 +33,13 @@ function UserPage({route, navigation}){
           .then((response) => 
             {
             if(response.status == 404){
-                throw('no user')
+                setdataPostToday([
+                    {
+                        _link_photo:'addPostToday.png'
+                    }
+                ])
+                setLoadingPostToday(false)
+                throw('no post today')
             }else{
                 return response.json()
             }})
@@ -46,7 +53,20 @@ function UserPage({route, navigation}){
                     return response.json()
                 }
             })
-            .then((json) => photos.push(json))
+            .then((json) => {
+                let list = [{
+                    _id_photo:'',
+                    _id_post:'',
+                    _link_photo:'addPostToday.png'
+                }]
+                for(let i of json){
+                    console.log(i)
+                    list.push(i)
+                }
+                console.log(list)
+                photos.push(list)
+                console.log(photos)
+            })
             .then(() => setdataPostToday(photos))
             .finally(() => setLoadingPostToday(false))
             .catch((e) => console.error(e))
@@ -124,49 +144,71 @@ function UserPage({route, navigation}){
 
             {/* Posts */}
             <View style={styles.container_photo}>
-                {/* Add line Today */}
-                <View style={{flex:1, alignItems:'center'}}>
+                {/* Line Today */}
+                <View style={{flex:4, alignItems:'center', width:'100%'}}>
                     <Image
                         source={require('../assets/Today.png')}
                         style={styles.imageText}
                     />
                     {isLoadingPostToday ? <Text>Loading...</Text> : 
                     <FlatList
-                        horizontal={true} 
+                        style={{width:'100%'}}
+                        horizontal={false} 
+                        numColumns={3}
                         showsHorizontalScrollIndicator={false}
                         data={dataPostToday[0]}
                         renderItem={({item, index, separators}) => (
-                            <Image
-                                source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._link_photo}}
-                                style={styles.image}
-                            >{/*console.log(item)*/}</Image>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    showImageDetails(navigation, item, dataUser)
+                                }}
+                                style={styles.buttonImage}
+                            >
+                                <Animated.Image
+                                    source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._link_photo}}
+                                    style={styles.image}
+                                >{console.log(item)}</Animated.Image>
+                            </TouchableOpacity>
                         )}
                     />}
                 </View>
 
-                {/* Add line not today */}
-                <View style={{flex:4, alignItems:'center'}}>
+                {/* Line not today */}
+                <View style={{flex:4, alignItems:'center', width:'100%'}}>
                     <Image
                         source={require('../assets/notToday.png')}
                         style={styles.imageText}
                     />
                     {isLoadingPostNotToday ? <Text>Loading...</Text> : 
                     <FlatList
+                        style={{width:'100%'}}
                         horizontal={false} 
-                        numColumns={2}
+                        numColumns={3}
                         showsHorizontalScrollIndicator={false} 
                         data={dataPostNotToday}
                         renderItem={({item, index, separators}) => (
-                            <Image
-                                source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._link_photo}}
-                                style={styles.image}
-                            >{/*console.log(item)*/}</Image>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    showImageDetails(navigation, item, dataUser)
+                                }}
+                                style={styles.buttonImage}
+                            >
+                                <Image
+                                    source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._link_photo}}
+                                    style={styles.image}
+                                >{/*console.log(item)*/}</Image>
+                            </TouchableOpacity>
+                            
                         )}
                     />}
                 </View>
             </View>
         </View>
     )
+}
+
+const showImageDetails = (navigation, photo, dataUser) => {
+    navigation.navigate('DetailPhoto', {data: photo, user: dataUser})
 }
 
 const styles = StyleSheet.create({
@@ -209,10 +251,30 @@ const styles = StyleSheet.create({
         overflow: 'hidden'
     },
 
-    image: {
+    buttonImage: {
         marginTop: 0,
-        width: 50,
-        height: 50
+        margin: 0,
+        padding: 0,
+        width: '33.333%',
+        aspectRatio: 1/1
+    },
+
+    image:{
+        marginTop: 0,
+        margin: 0,
+        padding: 0,
+        width: '100%',
+        aspectRatio: 1/1,
+        /*
+        transform: [
+            {
+                opacity: interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 0]
+                })
+            }
+        ]
+        */
     },
 
     imageTop: {

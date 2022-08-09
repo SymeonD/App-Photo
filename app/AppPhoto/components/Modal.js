@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View, Text, Button } from 'react-native';
+import { StyleSheet, View, Text, Button, ScrollView } from 'react-native';
 import RNModal from "react-native-modal";
 
 export const Modal = ({
@@ -31,7 +31,7 @@ const ModalHeader = ({ title }) => (
 );
 
 const ModalBody = ({ children }) => (
-  <View style={styles.body}>{children}</View>
+  <ScrollView contentContainerStyle={styles.body}>{children}</ScrollView>
 );
 
 const ModalFooter = ({ children }) => (
