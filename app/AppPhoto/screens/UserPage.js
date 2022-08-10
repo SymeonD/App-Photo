@@ -291,7 +291,7 @@ function UserPage({route, navigation}){
 
                     <Modal.Footer>
                         <TouchableOpacity
-                            onPress={() => createPost(descriptionPost ,imageSource)}
+                            onPress={() => createPost(descriptionPost ,imageSource, dataUser._pseudo_user)}
                         >
                             <Text>Create</Text>
                         </TouchableOpacity>
@@ -311,14 +311,12 @@ const showImageDetails = (navigation, photo, dataUser) => {
     }
 }
 
-const createPost = (descriptionPost, imagesPost) => {
+const createPost = (descriptionPost, imagesPost, user_pseudo) => {
 
     var postInformations = new FormData();
     postInformations.append('description', descriptionPost)
     postInformations.append('id_user', global.userId)
     postInformations.append('localisation', "Dans le camion")
-
-    var postId = new FormData();
 
     fetch("http://localhost:8000/post", {
         method: 'POST',
@@ -335,22 +333,28 @@ const createPost = (descriptionPost, imagesPost) => {
         }
     })
     .then((json) => {
-        postId.append('id_post', json.id_post)
         let photos = []
         for(let i of imagesPost){
             let temp = {
                 uri: i,
-                type: 'image/'+i.split('.').pop(),
+                type: 'image/'+((i.split('.').pop()) == 'jpg' ? 'jpeg' : i.split('.').pop()),
                 name: 'photo.'+i.split('.').pop()
             }
             photos.push(temp)
         }
         Promise.all(photos.map(photo => {
+            var postId = new FormData();
             postId.append('photo', photo),
+            postId.append('id_post', json.id_post)
+            postId.append('pseudo', user_pseudo)
+            console.log(postId)
+            console.log(photo)
             fetch('http://localhost:8000/photo',{method:'POST',headers:{'Content-Type':'multipart/form-data'},body: postId})
         }))
             .then((responses) => Promise.all(responses.map(res => console.log(res))))
+            .catch((e) => console.log(e))
     })
+    .catch((e) => console.log(e))
 }
 
 const styles = StyleSheet.create({
