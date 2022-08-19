@@ -63,8 +63,7 @@ function ConnectionScreen({navigation}) {
                     <Modal.Header title='Create an account'/>
 
                     <Modal.Body>
-                        {/* Profile pic */}
-                        
+                        {/* Profile pic */}     
                         <TouchableOpacity
                             style={PopupStyles.buttonProfile}
                             onPress={() => selectImage()}
@@ -125,7 +124,7 @@ function ConnectionScreen({navigation}) {
                             style={PopupStyles.buttonRegister}
                             onPress={() => {
                                 Register(imageSource, mail, pseudo, password, navigation)
-                                    .then(() => setNewUser(!newUser))
+                                setNewUser(!newUser)
                             }}
                         >
                             <Text style={styles.loginText}>

@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Animated, Alert } from "react-native";
+import { View, Text, StyleSheet, Image, Vibration, FlatList, TouchableOpacity, Animated, Alert, ScrollView, RefreshControl, Dimensions } from "react-native";
 import { TextInput } from "react-native-paper";
 import { Modal } from "../components/Modal";
 import { launchImageLibrary } from 'react-native-image-picker';
-import { append } from "express/lib/response";
 
 function UserPage({route, navigation}){
     const id_user = route.params.id;
-    const isSameUser = (global.userId == id_user);
+    const isSameUser = (global.userId == id_user); //For editing profile
 
     const [isLoadingUser, setLoadingUser] = useState(true);
     const [dataUser, setDataUser] = useState([]);
@@ -19,10 +18,10 @@ function UserPage({route, navigation}){
     const [dataPostNotToday, setdataPostNotToday] = useState([]);
 
     const [newPost, setNewPost] = useState(false);
-    const [imagesPost, setImagesPost] = useState([]);
+    const [imagesPost, setImagesPost] = useState(null);
     const [descriptionPost, setDescriptionPost] = useState('');
 
-    const [imageSource, setImageSource] = useState(null);
+    const [flatListLayout, setFlatListLayout] = useState(null);
 
     //Get the informations of the user
     useEffect(() => {
@@ -36,48 +35,43 @@ function UserPage({route, navigation}){
           .finally(() => setLoadingUser(false));
       }, []);
 
-    //Get today's post and photos
+    //Get today's posts and photos
     useEffect(() => {
-        fetch('http://localhost:8000/posts?id='+id_user+'&date='+new Date().toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'), {method:"GET"})
+        let today = new Date();
+        fetch('http://localhost:8000/posts?id='+id_user+'&date='+today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'), {method:"GET"})
           .then((response) => 
             {
             if(response.status == 404){
-                setdataPostToday([[
-                    {
-                        _id_photo:'',
-                        _id_post:'',
-                        _link_photo:'addPostToday.png'
-                    }
-                ]])
+                setdataPostToday([])
                 setLoadingPostToday(false)
-                throw('no post today')
             }else{
                 return response.json()
             }})
-          .then((json) => {
-            let photos = [];
-            fetch('http://localhost:8000/photos?id='+json[0]._id_post, {method:"GET"})
-            .then((response) => {
-                if(response.status == 404){
-                    throw('no photos')
-                }else{
-                    return response.json()
-                }
-            })
-            .then((json) => {
-                let list = [{
-                    _id_photo:'',
-                    _id_post:'',
-                    _link_photo:'addPostToday.png'
-                }]
-                for(let i of json){
-                    list.push(i)
-                }
-                photos.push(list)
-            })
-            .then(() => setdataPostToday(photos))
-            .finally(() => setLoadingPostToday(false))
-            .catch((e) => console.error(e))
+          .then((jsonPost) => {
+            let posts = [];
+            let urls = [];
+            for(let i of jsonPost){
+                urls.push('http://localhost:8000/photos?id='+i._id_post)
+                posts.push({post: i, photos: null})
+            }
+            Promise.all(urls.map(url => fetch(url)))
+                .then((responses) => Promise.all(responses.map(res => res.status != '404' ? res.json() : null))
+                    .then((json) => {
+                        let numPost = 0
+                        for(let j of json){ //For every post
+                            let photosPost = []
+                            if(j != null){
+                                for(let k of j){ //For every photo
+                                    photosPost.push(k)
+                                }
+                            }
+                            posts[numPost].photos = photosPost
+                            numPost += 1;
+                        }
+                    })
+                    .then(() => setdataPostToday(posts))
+                    .finally(() => setLoadingPostToday(false))
+                )
           })
           .catch((error) => console.error(error))
           
@@ -85,33 +79,40 @@ function UserPage({route, navigation}){
 
     //Get previous days posts and photos
     useEffect(() => {
-        fetch('http://localhost:8000/posts?id='+id_user, {method:"GET"})
+        fetch('http://localhost:8000/posts?id='+id_user+'&date=before', {method:"GET"}) // get photos from before today
           .then((responsePost) => 
             {
                 if(responsePost.status == 404){
+                    setdataPostNotToday([])
+                    setLoadingPostNotToday(false)
                     throw('no posts')
                 }else{
                     return responsePost.json()
                 }
             })
           .then((jsonPost) => { //json of all posts
-            let photos = [];
             let urls = [];
+            let posts = [];
             for(let i of jsonPost){ //Get all photos from the posts
                 urls.push('http://localhost:8000/photos?id='+i._id_post)
+                posts.push({post: i, photos: null})
             }
             Promise.all(urls.map(url => fetch(url)))
                 .then((responses) => Promise.all(responses.map(res => res.status != '404' ? res.json() : null))
                     .then((json) => {
+                        let numPost = 0
                         for(let j of json){ //For every post
+                            let photosPost = []
                             if(j != null){
                                 for(let k of j){ //For every photo
-                                    photos.push(k)
+                                    photosPost.push(k)
                                 }
                             }
+                            posts[numPost].photos = photosPost
+                            numPost += 1;
                         }
                     })
-                    .then(() => setdataPostNotToday(photos))
+                    .then(() => setdataPostNotToday(posts))
                     .finally(() => setLoadingPostNotToday(false))
                 )
           })
@@ -119,11 +120,12 @@ function UserPage({route, navigation}){
           
       }, []);
 
-    function selectImages() {
+    function selectImages(op) {
+        Vibration.vibrate(100);
         let options = {
           title: 'Choose your photos',
-          maxWidth: 256,
-          maxHeight: 256,
+          //maxWidth: 256,
+          //maxHeight: 256,
           storageOptions: {
             skipBackup: true
           },
@@ -134,7 +136,11 @@ function UserPage({route, navigation}){
         launchImageLibrary(options, response => {
             if (response.didCancel) {
               console.log('User cancelled photo picker');
-              Alert.alert('You did not select any image');
+              setTimeout(() => {
+                Alert.alert('You did not select any image',
+                {cancelable:true})
+              }, 100)
+              //Alert.alert('You did not select any image');
             } else if (response.error) {
               console.log('ImagePicker Error: ', response.error);
             } else if (response.customButton) {
@@ -150,14 +156,88 @@ function UserPage({route, navigation}){
                         source.push(i.uri);
                     }
                 }
-                setImageSource(source);
+                if(op == 'profile_pic'){
+                    changeProfilePic(source[0])
+                }else{
+                    setImagesPost(source);
+                }
             }
           });
       }
 
-    return (
-        <View style={{flex: 1, flexDirection: "column", backgroundColor: "#f8edeb"}}>
+    function createPost(descriptionPost, user_pseudo){
+        var postInformations = new FormData();
+        postInformations.append('description', descriptionPost)
+        postInformations.append('id_user', global.userId)
+        postInformations.append('localisation', "Dans le camion")
 
+        fetch("http://localhost:8000/post", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            },
+            body: postInformations
+        })
+        .then((resp) => {
+            if(resp.status == 401){
+                throw('An error occured during the creation of the post')
+            }else{
+                return resp.json()
+            }
+        })
+        .then((json) => {
+            let photos = []
+            let success = true
+            for(let i of imagesPost){
+                let temp = {
+                    uri: i,
+                    type: 'image/'+((i.split('.').pop()) == 'jpg' ? 'jpeg' : i.split('.').pop()),
+                    name: 'photo.'+i.split('.').pop()
+                }
+                photos.push(temp)
+            }
+            Promise.all(photos.map(photo => {
+                var postId = new FormData();
+                postId.append('photo', photo),
+                postId.append('id_post', json.id_post)
+                postId.append('pseudo', user_pseudo)
+                fetch('http://localhost:8000/photo',{method:'POST',headers:{'Content-Type':'multipart/form-data'},body: postId})
+            }))
+                .then((responses) => Promise.all(responses.map(res => res.status == 201 ? null : success = false)))
+                .then(() => {
+                    if(!success){
+                        throw('Error during photo post')
+                    }
+                })
+                .catch((e) => {setNewPost(!newPost)})
+            setNewPost(!newPost)
+        })
+        .catch((e) => {setNewPost(!newPost)})
+    }
+
+    function changeProfilePic(image) {
+        var profile_pic_file = {
+            uri: image,
+            type: 'image/'+((image.split('.').pop()) == 'jpg' ? 'jpeg' : image.split('.').pop()),
+            name: 'profile_pic.'+image.split('.').pop()
+        }
+        let userInformations = new FormData();
+        userInformations.append('profile_picture', profile_pic_file)
+
+        fetch('http://localhost:8000/user', {
+            method:'PATCH', 
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            },
+            body: userInformations
+        })
+            .then((res) => console.log(res))
+    }
+
+    return (
+        <View 
+            style={{flex: 1, flexDirection: "column", backgroundColor: "#f8edeb"}}
+        >
             {/* Header */}
             <View style={{alignItems: "center", height:50}}>
                 <Image
@@ -170,10 +250,15 @@ function UserPage({route, navigation}){
             <View style={styles.container_user}>
                 <View style={{flexDirection:"row", alignItems:"center", margin: 10, justifyContent:"space-between"}}>
                     {isLoadingUser ? <Text>Loading profile picture</Text> : 
-                    <Image 
-                        source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+dataUser._profile_picture_user}}
-                        style={styles.profile_pic}
-                    />}
+                    <TouchableOpacity
+                        onPress={() => selectImages('profile_pic')}
+                    >
+                        <Image 
+                            source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+dataUser._profile_picture_user}}
+                            style={styles.profile_pic}
+                        />
+                    </TouchableOpacity>
+                    }
                     <View style={styles.container_text_user}>
                         <Text style={styles.pseudo}>
                             {isLoadingUser ? "loading pseudo" : dataUser._pseudo_user}
@@ -200,19 +285,21 @@ function UserPage({route, navigation}){
                         horizontal={false} 
                         numColumns={3}
                         showsHorizontalScrollIndicator={false}
-                        data={dataPostToday[0]}
+                        data={getPhotosFromPost(dataPostToday, true)}
                         renderItem={({item, index, separators}) => (
+                             
                             <TouchableOpacity
                                 onPress={() => {
-                                    setNewPost(showImageDetails(navigation, item, dataUser))
+                                    setNewPost(showImageDetails(navigation, dataUser, item))
                                 }}
                                 style={styles.buttonImage}
                             >
                                 <Animated.Image
-                                    source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._link_photo}}
+                                    source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
                                     style={styles.image}
                                 >{/*console.log(item)*/}</Animated.Image>
                             </TouchableOpacity>
+                                
                         )}
                     />}
                 </View>
@@ -229,16 +316,16 @@ function UserPage({route, navigation}){
                         horizontal={false} 
                         numColumns={3}
                         showsHorizontalScrollIndicator={false} 
-                        data={dataPostNotToday}
+                        data={getPhotosFromPost(dataPostNotToday, false)}
                         renderItem={({item, index, separators}) => (
                             <TouchableOpacity
                                 onPress={() => {
-                                    showImageDetails(navigation, item, dataUser)
+                                    setNewPost(showImageDetails(navigation, dataUser, item))
                                 }}
                                 style={styles.buttonImage}
                             >
                                 <Image
-                                    source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._link_photo}}
+                                    source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
                                     style={styles.image}
                                 >{/*console.log(item)*/}</Image>
                             </TouchableOpacity>
@@ -253,47 +340,103 @@ function UserPage({route, navigation}){
                 isVisible={newPost}
                 onRequestClose={() => {
                     setNewPost(false)
+                    setImagesPost(null)
                 }}
             >
                 <Modal.Container>
-                    <Modal.Header title='Create a daily post' />      
-                    
-                    <Modal.Body>
-                        {/* Images picker */}
-                        <TouchableOpacity
-                            onPress={() => selectImages()}
-                        >
-                            <View>
-                            {
-                                imageSource === null ? (
-                                    <Text
-                                        style={{textAlign:'center'}}
+                    <Modal.Header title='Create a daily post' />  
+
+                    <ScrollView
+                        style={PopupStyles.scrollPost}
+                    >
+                        <Modal.Body>
+                            {/* Images picker */}
+                            {imagesPost == null ? 
+                            (
+                                <TouchableOpacity
+                                style={PopupStyles.btnPhotos}
+                                onPress={() => selectImages()}
+                                >
+                                    <View
+                                        style={{marginBottom: 0}}
                                     >
-                                        Pick {'\n'} an image
-                                    </Text>
-                                ) : (
-                                    <Image
-                                        source={{uri:imageSource[0]}}
-                                        style={styles.image}
+                                        <Text
+                                            style={{textAlign:'center', fontSize: 15}}
+                                        >
+                                            Pick {'\n'} your images
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ) : (
+                                <TouchableOpacity
+                                style={PopupStyles.btnPhotos}
+                                onLongPress={() => selectImages()}
+                                activeOpacity={1}
+                                >
+                                    <FlatList
+                                        style={{width:'110%',aspectRatio:1}}
+                                        horizontal={true}
+                                        pagingEnabled={true}
+                                        data={imagesPost}
+                                        showsHorizontalScrollIndicator={false}
+                                        keyExtractor={(item) => item.split('/').pop()}
+                                        ItemSeparatorComponent={null}
+                                        onLayout={(event) => {
+                                            setFlatListLayout(event.nativeEvent.layout)
+                                        }}
+                                        renderItem={({item, index, separators}) => (
+                                                {...flatListLayout == null ?
+                                                    (
+                                                        <Text>
+                                                            Loading
+                                                        </Text>
+                                                    ) : (
+                                                        <Image
+                                                            source={{uri:item}}
+                                                            style={{width:flatListLayout.width, aspectRatio: 1}}
+                                                        />
+                                                    )
+                                                }
+                                        )} 
                                     />
-                                )}
+                                </TouchableOpacity>
+                            )}
+                            <View
+                                style={PopupStyles.viewDescription}
+                            >
+                                <Text
+                                    style={{marginTop:10, alignSelf:'center', fontSize:20, marginBottom:10}}
+                                >
+                                    Description of the day
+                                </Text>
+                                <TextInput
+                                    placeholder='Today was a lovely day, i met whales as you can see.'
+                                    onChangeText={(description) => setDescriptionPost(description)}
+                                    style={PopupStyles.textDescription}
+                                />
                             </View>
-                        </TouchableOpacity>
-                        <View>
-                            <Text>Description of the day</Text>
-                            <TextInput
-                                placeholder='Today was a lovely day, i met whales as you can see.'
-                                onChangeText={(description) => setDescriptionPost(description)}
-                            />
-                        </View>
-                        
-                    </Modal.Body>  
+                            
+                        </Modal.Body>  
+                    </ScrollView>
 
                     <Modal.Footer>
+                        {/* Create */}
                         <TouchableOpacity
-                            onPress={() => createPost(descriptionPost ,imageSource, dataUser._pseudo_user)}
+                            onPress={() => {
+                                createPost(descriptionPost, dataUser._pseudo_user) //Images in ImagePost
+                                setImagesPost(null)
+                            }}
+                            style={PopupStyles.btnPost}
                         >
                             <Text>Create</Text>
+                        </TouchableOpacity>
+                        {/* Cancel */}
+                        <TouchableOpacity>
+                            <Text style={PopupStyles.cancel_button}
+                            onPress={() => {
+                                setNewPost(!newPost)
+                                setImagesPost(null)
+                            }}>Cancel</Text>
                         </TouchableOpacity>
                     </Modal.Footer>  
                 </Modal.Container>      
@@ -302,7 +445,7 @@ function UserPage({route, navigation}){
     )
 }
 
-const showImageDetails = (navigation, photo, dataUser) => {
+const showImageDetails = (navigation, dataUser, photo) => {
     if(photo._link_photo == 'addPostToday.png'){
         return true;
     }else{
@@ -311,50 +454,32 @@ const showImageDetails = (navigation, photo, dataUser) => {
     }
 }
 
-const createPost = (descriptionPost, imagesPost, user_pseudo) => {
-
-    var postInformations = new FormData();
-    postInformations.append('description', descriptionPost)
-    postInformations.append('id_user', global.userId)
-    postInformations.append('localisation', "Dans le camion")
-
-    fetch("http://localhost:8000/post", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'multipart/form-data'
-        },
-        body: postInformations
-    })
-    .then((resp) => {
-        if(resp.status == 401){
-            throw('An error occured during the creation of the post')
-        }else{
-            return resp.json()
+const getPhotosFromPost = (posts, newPost) => {
+    let photos = []
+    if(posts.length == 0){
+        if(newPost){
+            photos.push({
+                _id_photo:'',
+                _id_post:'resources',
+                _link_photo:'addPostToday.png'
+            })
         }
-    })
-    .then((json) => {
-        let photos = []
-        for(let i of imagesPost){
-            let temp = {
-                uri: i,
-                type: 'image/'+((i.split('.').pop()) == 'jpg' ? 'jpeg' : i.split('.').pop()),
-                name: 'photo.'+i.split('.').pop()
+        return(photos)
+    }else{
+        if(newPost){
+            photos.push({
+                _id_photo:'',
+                _id_post:'resources',
+                _link_photo:'addPostToday.png'
+            })
+        }
+        for(let i of posts){
+            for(let j of i.photos){
+                photos.push(j)
             }
-            photos.push(temp)
         }
-        Promise.all(photos.map(photo => {
-            var postId = new FormData();
-            postId.append('photo', photo),
-            postId.append('id_post', json.id_post)
-            postId.append('pseudo', user_pseudo)
-            console.log(postId)
-            console.log(photo)
-            fetch('http://localhost:8000/photo',{method:'POST',headers:{'Content-Type':'multipart/form-data'},body: postId})
-        }))
-            .then((responses) => Promise.all(responses.map(res => console.log(res))))
-            .catch((e) => console.log(e))
-    })
-    .catch((e) => console.log(e))
+        return(photos)
+    }
 }
 
 const styles = StyleSheet.create({
@@ -443,6 +568,59 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 30,
         aspectRatio: 2076/171
+    },
+})
+
+const PopupStyles = StyleSheet.create({
+    image: {
+        width: '70%',
+        aspectRatio: 1,
+        borderColor: '#ffffff'
+    },
+
+    btnPost:{
+        height:50,
+        width:'80%',
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius:25,
+        marginTop: 40,
+        marginBottom: 15,
+        backgroundColor: "#ffb5a7"
+    },
+
+    btnPhotos: {
+        width: '110%',
+        aspectRatio: 1,
+        backgroundColor: "#ffb5a7",
+        marginBottom: 20,
+        alignItems:'center',
+        justifyContent: 'center'
+    },
+
+    viewDescription: {
+        width: '80%',
+        height: 200
+    },
+
+    scrollPost: {
+        height: '50%'
+    },
+
+    textDescription: {
+        backgroundColor: "#ffb5a7",
+        borderRadius: 10,
+        width: "120%",
+        padding: 10,
+        textAlign:"left",
+        textAlign: 'justify',
+        marginLeft: '-10%',
+        height: 100,
+    },
+
+    cancel_button:{
+        height:30,
+        color: '#f9dcc4'
     },
 })
 

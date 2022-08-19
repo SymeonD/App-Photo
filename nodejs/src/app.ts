@@ -97,12 +97,16 @@ app.post("/connect", async(req,res) => {
 })
 
 app.patch("/user", async (req, res) => {
+  let profile_picture = req.files.profile_picture;
+  let url_profile_picture = "profile_picture_"+req.body["pseudo"]+"."+profile_picture.name.split('.').pop();
+  profile_picture.mv("./uploads/"+ req.body["pseudo"] + "/" + url_profile_picture);
+  
   var user : User = new User(
     req.body["id"],
     req.body["mail"],
     req.body["password"],
     req.body["pseudo"],
-    req.body["profile_picture"],
+    url_profile_picture,
     req.body["description"]
   );
   var success = await dao.patchUser(user);
@@ -150,7 +154,7 @@ app.get("/posts", async (req, res) => {
 
 app.get("/post", async (req, res) => {
   var post: Post = await dao.getPost(
-    req.body["id"]
+    req.query.id
   ) 
   if(post[0] != null){
     res.setHeader("Content-Type", "application/json");
@@ -200,7 +204,7 @@ app.post("/photo", async (req, res) => {
     let photo = req.files.photo;
     let today = new Date();
     url_photo = today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')+'-'+nbr+"."+photo.name.split('.').pop();
-    photo.mv("./uploads/"+ req.body["pseudo"] + "/" + url_photo);
+    photo.mv("./uploads/"+ req.body["pseudo"] + "/" + req.body["id_post"] + "/" + url_photo);
   }
   var success = await dao.postPhoto(
     req.body["id_post"],
