@@ -54,7 +54,6 @@ export class DAO {
                 res.rows[i]["description_user"]
               );
               users.push(tempo);
-              console.log(tempo);
             }
     
             return users;
@@ -87,7 +86,6 @@ export class DAO {
                     res.rows[i]["description_user"]
                   );
                   users.push(tempo);
-                  console.log(tempo);
                 }
         
                 return users;
@@ -118,7 +116,6 @@ export class DAO {
                     res.rows[i]["description_user"]
                   );
                   users.push(tempo);
-                  console.log(tempo);
                 }
         
                 return users;
@@ -230,7 +227,6 @@ export class DAO {
                     res.rows[i]["date_post"]
                   );
                   posts.push(tempo);
-                  console.log(tempo);
                 }
         
                 return posts;
@@ -245,9 +241,15 @@ export class DAO {
         var values: string[] = [
             id, date
         ];
-        var query: string = 
+        if(date == 'before'){
+            var query: string = 
+            "SELECT * FROM posts WHERE id_user=$1 and date_post!=$2";
+        }else{
+            var query: string = 
             "SELECT * FROM posts WHERE id_user=$1 and date_post=$2";
-        return await this._pool
+        }
+        
+            return await this._pool
             .query(query, values)
             .then((res) => {
                 var i;
@@ -260,7 +262,6 @@ export class DAO {
                     res.rows[i]["date_post"]
                   );
                   posts.push(tempo);
-                  console.log(tempo);
                 }
         
                 return posts;
@@ -292,7 +293,6 @@ export class DAO {
                         res.rows[i]["date_post"]
                     );
                     posts.push(tempo);
-                    console.log(tempo);
                 }   
                 return posts;
             })
@@ -328,7 +328,7 @@ export class DAO {
             })
             .catch((e) => {
                 if (e.code == 23505) {
-                    console.log("⚠️: Le compte existe déjà");
+                    console.log("⚠️: Le post existe déjà");
                 } else {
                     console.error(e.stack);
                 }
@@ -347,7 +347,6 @@ export class DAO {
         return await this._pool
             .query(query, values)
             .then((res) => {
-                console.log(parseInt(res.rows[0].count))
                 return parseInt(res.rows[0].count);
             })
             .catch((e) => {
