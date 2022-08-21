@@ -3,7 +3,6 @@ import { View, Vibration, Text, TextInput, TouchableOpacity, StyleSheet, Image, 
 import { Modal } from "../components/Modal";
 import { launchImageLibrary } from 'react-native-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { enabled } from 'express/lib/application';
 //import { TextInput } from 'react-native-paper';
 //import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -76,7 +75,7 @@ function ConnectionScreen({navigation}) {
         userCredentials.append('pseudo', pseudo);
         userCredentials.append('password', password);
 
-        fetch("http://localhost:8000/connect", {
+        fetch(global.urlAPI+"connect", {
             method:'POST', 
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded"
@@ -116,7 +115,7 @@ function ConnectionScreen({navigation}) {
         userInformations.append('pseudo', pseudo);
         userInformations.append('password', password);
     
-        fetch('http://localhost:8000/user', {
+        fetch(global.urlAPI+'user', {
             method: 'POST',
             body: userInformations,
         })

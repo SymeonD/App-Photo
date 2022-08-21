@@ -16,11 +16,12 @@ services:
     #ports:
     #  - "5432:5432"
     volumes:
-          - ./db/db_app:/var/lib/postgresql/data
+          - db_app:/var/lib/postgresql/data
           # copy the sql script to create tables
           - ./db/create.sql:/docker-entrypoint-initdb.d/create.sql
           # copy the sql script to drop tables
           - ./db/drop.sql:/docker-entrypoint-initdb.d/drop.sql
+
   application:
     build: ./nodejs
     container_name: application

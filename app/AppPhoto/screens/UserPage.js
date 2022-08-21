@@ -94,7 +94,7 @@ function UserPage({route, navigation}){
       }
 
     async function getUserInformations() {
-        fetch('http://localhost:8000/user?id='+id_user, {method:"GET"})
+        fetch(global.urlAPI+'user?id='+id_user, {method:"GET"})
           .then((response) => 
             response.json())
           .then((json) => {
@@ -106,7 +106,7 @@ function UserPage({route, navigation}){
 
     async function getTodaysPosts() {
         let today = new Date();
-        fetch('http://localhost:8000/posts?id='+id_user+'&date='+today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'), {method:"GET"})
+        fetch(global.urlAPI+'posts?id='+id_user+'&date='+today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'), {method:"GET"})
           .then((response) => 
             {
             if(response.status == 404){
@@ -120,7 +120,7 @@ function UserPage({route, navigation}){
             let posts = [];
             let urls = [];
             for(let i of jsonPost){
-                urls.push('http://localhost:8000/photos?id='+i._id_post)
+                urls.push(global.urlAPI+'photos?id='+i._id_post)
                 posts.push({post: i, photos: null})
             }
             Promise.all(urls.map(url => fetch(url)))
@@ -146,7 +146,7 @@ function UserPage({route, navigation}){
     }
 
     async function getNotTodaysPosts() {
-        fetch('http://localhost:8000/posts?id='+id_user+'&date=before', {method:"GET"}) // get photos from before today
+        fetch(global.urlAPI+'posts?id='+id_user+'&date=before', {method:"GET"}) // get photos from before today
           .then((responsePost) => 
             {
                 if(responsePost.status == 404){
@@ -161,7 +161,7 @@ function UserPage({route, navigation}){
             let urls = [];
             let posts = [];
             for(let i of jsonPost){ //Get all photos from the posts
-                urls.push('http://localhost:8000/photos?id='+i._id_post)
+                urls.push(global.urlAPI+'photos?id='+i._id_post)
                 posts.push({post: i, photos: null})
             }
             Promise.all(urls.map(url => fetch(url)))
@@ -192,7 +192,7 @@ function UserPage({route, navigation}){
         postInformations.append('id_user', global.userId)
         postInformations.append('localisation', "Dans le camion")
 
-        fetch("http://localhost:8000/post", {
+        fetch(global.urlAPI+"post", {
             method: 'POST',
             headers: {
                 'Content-Type': 'multipart/form-data'
@@ -222,7 +222,7 @@ function UserPage({route, navigation}){
                 postId.append('photo', photo),
                 postId.append('id_post', json.id_post)
                 postId.append('pseudo', user_pseudo)
-                fetch('http://localhost:8000/photo',{method:'POST',headers:{'Content-Type':'multipart/form-data'},body: postId})
+                fetch(global.urlAPI+'photo',{method:'POST',headers:{'Content-Type':'multipart/form-data'},body: postId})
             }))
                 .then((responses) => Promise.all(responses.map(res => res.status == 201 ? null : success = false)))
                 .then(() => {
@@ -248,7 +248,7 @@ function UserPage({route, navigation}){
         userInformations.append('id', dataUser._id_user)
         userInformations.append('pseudo', dataUser._pseudo_user)
 
-        fetch('http://localhost:8000/user', {
+        fetch(global.urlAPI+'user', {
             method:'PATCH', 
             headers: {
                 'Content-Type': 'multipart/form-data'
@@ -289,12 +289,12 @@ function UserPage({route, navigation}){
                     >
                         {imageReload ? 
                             <Image 
-                                source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+dataUser._profile_picture_user + '?' + new Date()}} //Add a new date if needed
+                                source={{uri:global.urlAPI+''+dataUser._pseudo_user+'/'+dataUser._profile_picture_user + '?' + new Date()}} //Add a new date if needed
                                 style={styles.profile_pic}
                             />
                         :
                             <Image 
-                                source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+dataUser._profile_picture_user}} //Add a new date if needed
+                                source={{uri:global.urlAPI+''+dataUser._pseudo_user+'/'+dataUser._profile_picture_user}} //Add a new date if needed
                                 style={styles.profile_pic}
                             />
                         }
@@ -337,7 +337,7 @@ function UserPage({route, navigation}){
                                 style={styles.buttonImage}
                             >
                                 <Animated.Image
-                                    source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
+                                    source={{uri:global.urlAPI+''+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
                                     style={styles.image}
                                 >{/*console.log(item)*/}</Animated.Image>
                             </TouchableOpacity>
@@ -373,7 +373,7 @@ function UserPage({route, navigation}){
                                 style={styles.buttonImage}
                             >
                                 <Image
-                                    source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
+                                    source={{uri:global.urlAPI+''+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
                                     style={styles.image}
                                 >{/*console.log(item)*/}</Image>
                             </TouchableOpacity>

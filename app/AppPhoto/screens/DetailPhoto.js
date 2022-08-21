@@ -13,7 +13,7 @@ const DetailPhoto = ({route, navigation}) => {
     const y = useRef()
 
     useEffect(() => {
-        fetch('http://localhost:8000/post?id='+photo._id_post, {method:"GET"})
+        fetch(global.urlAPI+'post?id='+photo._id_post, {method:"GET"})
             .then((res) => res.json())
             .then((json) => setPost(json[0]))
             .finally(() => setPostLoading(false))
@@ -39,7 +39,7 @@ const DetailPhoto = ({route, navigation}) => {
                 style={{borderColor: '#ffb5a7', borderBottomWidth: 10}}
             >
                 <Image
-                    source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+photo._id_post+'/'+photo._link_photo}}
+                    source={{uri:global.urlAPI+dataUser._pseudo_user+'/'+photo._id_post+'/'+photo._link_photo}}
                     style={{width:'100%', aspectRatio:1}}
                 />
             </View>
