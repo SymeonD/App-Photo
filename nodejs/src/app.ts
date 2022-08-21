@@ -79,6 +79,17 @@ app.post("/user", async (req, res) => {
     req.body["description"]
   );
   if (id_user != "") {
+    let fs = require('fs');
+    fs.mkdir("./uploads/"+ req.body["pseudo"] + "/resources/", (err) => {
+      if(err)
+        throw(err)
+      console.log('Directory created successfully')
+    })
+    fs.copyFile('./uploads/resources/addPostToday.png', "./uploads/"+ req.body["pseudo"] + "/resources/addPostToday.png", (err) => {
+      if(err)
+        throw(err);
+      console.log('Image copied successfully')
+    })
     res.status(201).json({id:id_user});
   } else {
     res.status(500).send("User hasn't been added");
