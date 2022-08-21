@@ -189,7 +189,7 @@ function UserPage({route, navigation}){
     function createPost(descriptionPost, user_pseudo){
         var postInformations = new FormData();
         postInformations.append('description', descriptionPost)
-        postInformations.append('id_user', global.userId)
+        postInformations.append('id_user', dataUser._id_user)
         postInformations.append('localisation', "Dans le camion")
 
         fetch(global.urlAPI+"post", {
