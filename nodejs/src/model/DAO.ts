@@ -245,7 +245,7 @@ export class DAO {
         ];
         if(opt == 'before'){
             var query: string = 
-            "SELECT * FROM posts WHERE id_user=$1 and date_post<=$2";
+            "SELECT * FROM posts WHERE id_user=$1 and date_post<$2";
         }else{
             var query: string = 
             "SELECT * FROM posts WHERE id_user=$1 and date_post=$2";
