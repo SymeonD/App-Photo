@@ -188,7 +188,7 @@ function UserPage({route, navigation}){
     }
 
     function createPost(descriptionPost, user_pseudo){
-        let today = new Day()
+        let today = new Date()
         var postInformations = new FormData();
         postInformations.append('description', descriptionPost)
         postInformations.append('id_user', dataUser._id_user)
