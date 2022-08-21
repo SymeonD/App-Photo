@@ -174,17 +174,19 @@ function ConnectionScreen({navigation}) {
                                 )}
                             </View>
                         </TouchableOpacity>
+
                         {/* Mail */}
                         <TextInput
                             style={[PopupStyles.inputText, {borderColor: 'red', borderWidth: (mail.length != 0 || isFieldValid[1]) ? 0 : 1}]}
                             autoCapitalize='none'
-                            autoComplete='email'
                             keyboardType='email-address'
+                            caretHidden={false}
                             placeholder='Mail.'
                             onChangeText={(mail) => {
                                 setMail(mail)
                                 isFieldValid[1] ? setFieldValid([isFieldValid[0], false, isFieldValid[2], isFieldValid[3], isFieldValid[4]]) : null
                             }}
+                            defaultValue={mail}
                         />
                         {/* Pseudo */}
                         <TextInput
@@ -195,6 +197,7 @@ function ConnectionScreen({navigation}) {
                                 setPseudo(pseudo)
                                 isFieldValid[2] ? setFieldValid([isFieldValid[0], isFieldValid[1], false, isFieldValid[3], isFieldValid[4]]) : null
                             }}
+                            defaultValue={pseudo}
                         />
                         {/* Password */}
                         <TextInput
@@ -206,6 +209,7 @@ function ConnectionScreen({navigation}) {
                                 setPassword(password)
                                 isFieldValid[3] ? setFieldValid([isFieldValid[0], isFieldValid[1], isFieldValid[2], false, isFieldValid[4]]) : null
                             }}
+                            defaultValue={password}
                         />
                         {/* Confirm password */}
                         <TextInput
@@ -217,6 +221,7 @@ function ConnectionScreen({navigation}) {
                                 isFieldValid[4] ? setFieldValid([isFieldValid[0], isFieldValid[1], isFieldValid[2], isFieldValid[3], false]) : null
                                 setPasswordConfirm(passwordConfirm)
                             }}
+                            defaultValue={passwordConfirm}
                         />
                     </Modal.Body>
 
