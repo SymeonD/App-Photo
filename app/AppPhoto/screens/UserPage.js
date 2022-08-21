@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, Vibration, FlatList, TouchableOpacity, Animated, Alert, ScrollView, RefreshControl, Dimensions } from "react-native";
-import { TextInput } from "react-native-paper";
+import { View, Text, StyleSheet, TextInput, Image, Vibration, FlatList, TouchableOpacity, Animated, Alert, ScrollView, RefreshControl, Dimensions } from "react-native";
+//import { TextInput } from "react-native-paper";
 import { Modal } from "../components/Modal";
 import { launchImageLibrary } from 'react-native-image-picker';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function UserPage({route, navigation}){
     const id_user = route.params.id;
+    
     const isSameUser = (global.userId == id_user); //For editing profile
 
     const [isLoadingUser, setLoadingUser] = useState(true);
@@ -23,101 +25,27 @@ function UserPage({route, navigation}){
 
     const [flatListLayout, setFlatListLayout] = useState(null);
 
+    //Profile Pic change
+    const [imageReload, setImageReload] = useState(false);
+
+    //Scroll to refresh
+    const [refreshing, setRefreshing] = React.useState(false);
+
+    const onRefresh = React.useCallback(() => {
+        setRefreshing(true);
+        getUserInformations();
+        getTodaysPosts();
+        getNotTodaysPosts();
+        setTimeout(() => {setRefreshing(false)}, 2000)
+    }, []);
+
     //Get the informations of the user
-    useEffect(() => {
-        fetch('http://localhost:8000/user?id='+id_user, {method:"GET"})
-          .then((response) => 
-            response.json())
-          .then((json) => {
-            setDataUser(json[0])
-          })
-          .catch((error) => console.error(error))
-          .finally(() => setLoadingUser(false));
-      }, []);
-
     //Get today's posts and photos
-    useEffect(() => {
-        let today = new Date();
-        fetch('http://localhost:8000/posts?id='+id_user+'&date='+today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'), {method:"GET"})
-          .then((response) => 
-            {
-            if(response.status == 404){
-                setdataPostToday([])
-                setLoadingPostToday(false)
-            }else{
-                return response.json()
-            }})
-          .then((jsonPost) => {
-            let posts = [];
-            let urls = [];
-            for(let i of jsonPost){
-                urls.push('http://localhost:8000/photos?id='+i._id_post)
-                posts.push({post: i, photos: null})
-            }
-            Promise.all(urls.map(url => fetch(url)))
-                .then((responses) => Promise.all(responses.map(res => res.status != '404' ? res.json() : null))
-                    .then((json) => {
-                        let numPost = 0
-                        for(let j of json){ //For every post
-                            let photosPost = []
-                            if(j != null){
-                                for(let k of j){ //For every photo
-                                    photosPost.push(k)
-                                }
-                            }
-                            posts[numPost].photos = photosPost
-                            numPost += 1;
-                        }
-                    })
-                    .then(() => setdataPostToday(posts))
-                    .finally(() => setLoadingPostToday(false))
-                )
-          })
-          .catch((error) => console.error(error))
-          
-      }, []);
-
     //Get previous days posts and photos
     useEffect(() => {
-        fetch('http://localhost:8000/posts?id='+id_user+'&date=before', {method:"GET"}) // get photos from before today
-          .then((responsePost) => 
-            {
-                if(responsePost.status == 404){
-                    setdataPostNotToday([])
-                    setLoadingPostNotToday(false)
-                    throw('no posts')
-                }else{
-                    return responsePost.json()
-                }
-            })
-          .then((jsonPost) => { //json of all posts
-            let urls = [];
-            let posts = [];
-            for(let i of jsonPost){ //Get all photos from the posts
-                urls.push('http://localhost:8000/photos?id='+i._id_post)
-                posts.push({post: i, photos: null})
-            }
-            Promise.all(urls.map(url => fetch(url)))
-                .then((responses) => Promise.all(responses.map(res => res.status != '404' ? res.json() : null))
-                    .then((json) => {
-                        let numPost = 0
-                        for(let j of json){ //For every post
-                            let photosPost = []
-                            if(j != null){
-                                for(let k of j){ //For every photo
-                                    photosPost.push(k)
-                                }
-                            }
-                            posts[numPost].photos = photosPost
-                            numPost += 1;
-                        }
-                    })
-                    .then(() => setdataPostNotToday(posts))
-                    .finally(() => setLoadingPostNotToday(false))
-                )
-          })
-          .catch((error) => console.error(error))
-          
+        getUserInformations();
+        getTodaysPosts();
+        getNotTodaysPosts();
       }, []);
 
     function selectImages(op) {
@@ -165,6 +93,99 @@ function UserPage({route, navigation}){
           });
       }
 
+    async function getUserInformations() {
+        fetch('http://localhost:8000/user?id='+id_user, {method:"GET"})
+          .then((response) => 
+            response.json())
+          .then((json) => {
+            setDataUser(json[0])
+          })
+          .catch((error) => console.error(error))
+          .finally(() => {setLoadingUser(false)});
+    }
+
+    async function getTodaysPosts() {
+        let today = new Date();
+        fetch('http://localhost:8000/posts?id='+id_user+'&date='+today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'), {method:"GET"})
+          .then((response) => 
+            {
+            if(response.status == 404){
+                setdataPostToday([])
+                setLoadingPostToday(false)
+                throw('no posts today')
+            }else{
+                return response.json()
+            }})
+          .then((jsonPost) => {
+            let posts = [];
+            let urls = [];
+            for(let i of jsonPost){
+                urls.push('http://localhost:8000/photos?id='+i._id_post)
+                posts.push({post: i, photos: null})
+            }
+            Promise.all(urls.map(url => fetch(url)))
+                .then((responses) => Promise.all(responses.map(res => res.status != '404' ? res.json() : null))
+                    .then((json) => {
+                        let numPost = 0
+                        for(let j of json){ //For every post
+                            let photosPost = []
+                            if(j != null){
+                                for(let k of j){ //For every photo
+                                    photosPost.push(k)
+                                }
+                            }
+                            posts[numPost].photos = photosPost
+                            numPost += 1;
+                        }
+                    })
+                    .then(() => setdataPostToday(posts))
+                    .finally(() => setLoadingPostToday(false))
+                )
+          })
+          .catch((error) => console.error(error))
+    }
+
+    async function getNotTodaysPosts() {
+        fetch('http://localhost:8000/posts?id='+id_user+'&date=before', {method:"GET"}) // get photos from before today
+          .then((responsePost) => 
+            {
+                if(responsePost.status == 404){
+                    setdataPostNotToday([])
+                    setLoadingPostNotToday(false)
+                    throw('no posts')
+                }else{
+                    return responsePost.json()
+                }
+            })
+          .then((jsonPost) => { //json of all posts
+            let urls = [];
+            let posts = [];
+            for(let i of jsonPost){ //Get all photos from the posts
+                urls.push('http://localhost:8000/photos?id='+i._id_post)
+                posts.push({post: i, photos: null})
+            }
+            Promise.all(urls.map(url => fetch(url)))
+                .then((responses) => Promise.all(responses.map(res => res.status != '404' ? res.json() : null))
+                    .then((json) => {
+                        let numPost = 0
+                        for(let j of json){ //For every post
+                            let photosPost = []
+                            if(j != null){
+                                for(let k of j){ //For every photo
+                                    photosPost.push(k)
+                                }
+                            }
+                            posts[numPost].photos = photosPost
+                            numPost += 1;
+                        }
+                    })
+                    .then(() => setdataPostNotToday(posts))
+                    .finally(() => setLoadingPostNotToday(false))
+                )
+          })
+          .catch((error) => console.error(error))
+    }
+
     function createPost(descriptionPost, user_pseudo){
         var postInformations = new FormData();
         postInformations.append('description', descriptionPost)
@@ -211,6 +232,7 @@ function UserPage({route, navigation}){
                 })
                 .catch((e) => {setNewPost(!newPost)})
             setNewPost(!newPost)
+            onRefresh()
         })
         .catch((e) => {setNewPost(!newPost)})
     }
@@ -223,6 +245,8 @@ function UserPage({route, navigation}){
         }
         let userInformations = new FormData();
         userInformations.append('profile_picture', profile_pic_file)
+        userInformations.append('id', dataUser._id_user)
+        userInformations.append('pseudo', dataUser._pseudo_user)
 
         fetch('http://localhost:8000/user', {
             method:'PATCH', 
@@ -231,7 +255,17 @@ function UserPage({route, navigation}){
             },
             body: userInformations
         })
-            .then((res) => console.log(res))
+            .then((res) => {
+                if(res.status == 500){
+                    console.log('An error occured during the patch')
+                }else{
+                    setImageReload(true)
+                    //onRefresh()
+                }
+            })
+            .catch((e) => {
+                setImageReload(true)
+                console.log('The patch issued an error : '+e)})
     }
 
     return (
@@ -253,10 +287,18 @@ function UserPage({route, navigation}){
                     <TouchableOpacity
                         onPress={() => selectImages('profile_pic')}
                     >
-                        <Image 
-                            source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+dataUser._profile_picture_user}}
-                            style={styles.profile_pic}
-                        />
+                        {imageReload ? 
+                            <Image 
+                                source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+dataUser._profile_picture_user + '?' + new Date()}} //Add a new date if needed
+                                style={styles.profile_pic}
+                            />
+                        :
+                            <Image 
+                                source={{uri:'http://localhost:8000/'+dataUser._pseudo_user+'/'+dataUser._profile_picture_user}} //Add a new date if needed
+                                style={styles.profile_pic}
+                            />
+                        }
+                        
                     </TouchableOpacity>
                     }
                     <View style={styles.container_text_user}>
@@ -312,6 +354,12 @@ function UserPage({route, navigation}){
                     />
                     {isLoadingPostNotToday ? <Text>Loading...</Text> : 
                     <FlatList
+                        refreshControl={
+                            <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            />
+                        }
                         style={{width:'100%'}}
                         horizontal={false} 
                         numColumns={3}
@@ -401,6 +449,8 @@ function UserPage({route, navigation}){
                                     />
                                 </TouchableOpacity>
                             )}
+
+                            {/* Description */}
                             <View
                                 style={PopupStyles.viewDescription}
                             >
@@ -408,6 +458,24 @@ function UserPage({route, navigation}){
                                     style={{marginTop:10, alignSelf:'center', fontSize:20, marginBottom:10}}
                                 >
                                     Description of the day
+                                </Text>
+                                <TextInput
+                                    placeholder='Today was a lovely day, i met whales as you can see.'
+                                    onChangeText={(description) => setDescriptionPost(description)}
+                                    style={PopupStyles.textDescription}
+                                    maxLength={222}
+                                    multiline={true}
+                                />
+                            </View>
+
+                            {/* Location */}
+                            <View
+                                style={PopupStyles.viewDescription}
+                            >
+                                <Text
+                                    style={{marginTop:10, alignSelf:'center', fontSize:20, marginBottom:10}}
+                                >
+                                    Location
                                 </Text>
                                 <TextInput
                                     placeholder='Today was a lovely day, i met whales as you can see.'
@@ -564,7 +632,8 @@ const styles = StyleSheet.create({
     },
 
     imageText: {
-        marginTop: 0,
+        marginTop: 10,
+        marginBottom: 10,
         width: '100%',
         height: 30,
         aspectRatio: 2076/171
@@ -600,7 +669,7 @@ const PopupStyles = StyleSheet.create({
 
     viewDescription: {
         width: '80%',
-        height: 200
+        height: 200,
     },
 
     scrollPost: {
@@ -609,13 +678,17 @@ const PopupStyles = StyleSheet.create({
 
     textDescription: {
         backgroundColor: "#ffb5a7",
+        fontSize: 15,
         borderRadius: 10,
         width: "120%",
         padding: 10,
+        paddingLeft: 15,
         textAlign:"left",
-        textAlign: 'justify',
+        textAlignVertical: "top",
+        minHeight: 100,
         marginLeft: '-10%',
-        height: 100,
+        marginTop: 10,
+        marginBottom: 10
     },
 
     cancel_button:{

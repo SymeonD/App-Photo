@@ -14,7 +14,6 @@ export default function App() {
         <Stack.Navigator>
             <Stack.Screen name="ConnectionScreen" component={ConnectionScreen} />
             <Stack.Screen name="UserPage" component={UserPage} />
-            <Stack.Screen name="AppVrai" component={AppVrai} />
             <Stack.Screen name="DetailPhoto" component={DetailPhoto} />
         </Stack.Navigator>
     }</NavigationContainer>

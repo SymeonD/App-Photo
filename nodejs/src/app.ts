@@ -5,6 +5,7 @@ import { DAO } from "./model/DAO";
 import { User } from "./model/User";
 import { Post } from "./model/Post";
 import { Photo } from "./model/Photo";
+import { profile } from "console";
 
 const app = express();
 const https = require("https");
@@ -98,16 +99,20 @@ app.post("/connect", async(req,res) => {
 
 app.patch("/user", async (req, res) => {
   let profile_picture = req.files.profile_picture;
-  let url_profile_picture = "profile_picture_"+req.body["pseudo"]+"."+profile_picture.name.split('.').pop();
-  profile_picture.mv("./uploads/"+ req.body["pseudo"] + "/" + url_profile_picture);
-  
+  let url_profile_picture = null
+  if(profile_picture){
+    url_profile_picture = "profile_picture_"+req.body["pseudo"]+"."+profile_picture.name.split('.').pop();
+    profile_picture.mv("./uploads/"+ req.body["pseudo"] + "/" + url_profile_picture);
+  }
+
+  //Need to specify the 'null' value otherwise the value is 'undefined' and don't match the db
   var user : User = new User(
-    req.body["id"],
-    req.body["mail"],
-    req.body["password"],
-    req.body["pseudo"],
+    req.body["id"] ? req.body["id"] : null, //Need this at least
+    req.body["mail"] ? req.body["mail"] : null,
+    req.body["password"] ? req.body["password"] : null,
+    req.body["pseudo"] ? req.body["pseudo"] : null,
     url_profile_picture,
-    req.body["description"]
+    req.body["description"] ? req.body["description"] : null
   );
   var success = await dao.patchUser(user);
   if (success) {

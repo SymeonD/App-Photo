@@ -166,8 +166,8 @@ export class DAO {
     }
     
     async patchUser(user: User): Promise<Boolean> {
-        var hash: string;
-        if (user._password_user) {
+        var hash: string = null;
+        if (user._password_user != null) {
           // s'il y a un mdp on le hash
           hash = this.creationHash(user._password_user);
         }
@@ -175,10 +175,12 @@ export class DAO {
           user._id_user,
           user._mail_user,
           hash,
-          user._pseudo_user
+          user._pseudo_user,
+          user._profile_picture_user,
+          user._description_user
         ];
         var query: string =
-          "UPDATE users SET mail_user=COALESCE($2,mail_user),password_user=COALESCE($3,password_user),pseudo_user=COALESCE($4,pseudo_user),profile_picture_user=COALESCE($5,profile_picture_user),description_user=COALESCE($6,description_user) WHERE id_user=$1";
+          "UPDATE users SET mail_user=COALESCE($2,mail_user), password_user=COALESCE($3,password_user), pseudo_user=COALESCE($4,pseudo_user), profile_picture_user=COALESCE($5,profile_picture_user), description_user=COALESCE($6,description_user) WHERE id_user=$1";
         return await this._pool
           .query(query, values)
           .then((res) => {
@@ -229,7 +231,7 @@ export class DAO {
                   posts.push(tempo);
                 }
         
-                return posts;
+                return posts.reverse();
               })
               .catch((e) => {
                 return posts;
@@ -242,6 +244,10 @@ export class DAO {
             id, date
         ];
         if(date == 'before'){
+            let today = new Date();
+            var values: string[] = [
+                id, today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')
+            ];
             var query: string = 
             "SELECT * FROM posts WHERE id_user=$1 and date_post!=$2";
         }else{
@@ -264,7 +270,7 @@ export class DAO {
                   posts.push(tempo);
                 }
         
-                return posts;
+                return posts.reverse();
               })
               .catch((e) => {
                 return posts;

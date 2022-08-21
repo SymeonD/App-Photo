@@ -1,11 +1,16 @@
-import React, {useState} from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Colors } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import { View, Vibration, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { Modal } from "../components/Modal";
 import { launchImageLibrary } from 'react-native-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { enabled } from 'express/lib/application';
 //import { TextInput } from 'react-native-paper';
 //import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 function ConnectionScreen({navigation}) {
+    const [pseudoConnect, setPseudoConnect] = useState('');
+    const [passwordConnect, setPasswordConnect] = useState('');
+
     const [pseudo, setPseudo] = useState('');
     const [password, setPassword] = useState('');
 
@@ -17,6 +22,23 @@ function ConnectionScreen({navigation}) {
     const [imageSource, setImageSource] = useState(null);
 
     const [isPasswordHidden, setPasswordHidden] = useState(true);
+
+    //Validation connect
+    const [isUserExisting, setUserExisting] = useState(null);
+    const [justStarted, setJustStarted] = useState([true, true]);
+
+    //Validation register
+    const [isFieldValid, setFieldValid] = useState([true, true, true, true, true]) //User fields
+
+    useEffect(() => {
+        AsyncStorage.getItem('loggedUser')
+            .then((resUser) => {
+                if(resUser){
+                    global.userId = resUser;
+                    //navigation.navigate('UserPage', {id:resUser})
+                }
+            })
+    })
 
     function selectImage() {
         let options = {
@@ -49,6 +71,74 @@ function ConnectionScreen({navigation}) {
           });
       }
 
+    function Connect(pseudo, password, navigation) {
+        var userCredentials = new URLSearchParams();
+        userCredentials.append('pseudo', pseudo);
+        userCredentials.append('password', password);
+
+        fetch("http://localhost:8000/connect", {
+            method:'POST', 
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: userCredentials.toString() //Don't forget the toString()
+        })
+            .then((res) => {
+                if(res.status != 404){
+                    setUserExisting(true)
+                    return res.json();
+                }else{
+                    setUserExisting(false)
+                    Vibration.vibrate([50, 50, 50, 50])
+                    throw new Error(res.status);
+                }
+            })
+            .then((data) => {
+                if(data.id){
+                    global.userId = data.id;
+                    AsyncStorage.setItem('loggedUser', data.id)
+                        .then(() => {Vibration.vibrate(100); navigation.navigate("UserPage", {id:data.id})})
+                }
+            })
+            .catch((error) => {
+                console.log(error)})
+    }
+
+    function Register(profile_pic, mail, pseudo, password, navigation) {
+        var profile_pic_file = {
+            uri: profile_pic,
+            type: 'image/jpeg',
+            name: 'profile_pic.jpg'
+        }
+        var userInformations = new FormData();
+        userInformations.append('profile_picture', profile_pic_file);
+        userInformations.append('mail', mail);
+        userInformations.append('pseudo', pseudo);
+        userInformations.append('password', password);
+    
+        fetch('http://localhost:8000/user', {
+            method: 'POST',
+            body: userInformations,
+        })
+            .then((res) => {
+                if(res.status != 401){
+                    setUserExisting(true)
+                    return res.json();
+                }else{
+                    throw new Error(res.status);
+                }
+            })
+            .then((data) => {
+                if(data.id){
+                    global.userId = data.id;
+                    AsyncStorage.setItem('loggedUser', data.id)
+                        .then(() => navigation.navigate("UserPage", {id:data.id}))
+                }
+            })
+            .catch((error) => {
+                console.log(error)})
+    }
+
     return (
         <View style={styles.container}>
 
@@ -65,7 +155,7 @@ function ConnectionScreen({navigation}) {
                     <Modal.Body>
                         {/* Profile pic */}     
                         <TouchableOpacity
-                            style={PopupStyles.buttonProfile}
+                            style={[PopupStyles.buttonProfile, {borderColor: 'red', borderWidth: (imageSource === null || isFieldValid[0]) ? 0 : 1}]}
                             onPress={() => selectImage()}
                         >
                             <View>
@@ -86,46 +176,72 @@ function ConnectionScreen({navigation}) {
                         </TouchableOpacity>
                         {/* Mail */}
                         <TextInput
-                            style={PopupStyles.inputText}
+                            style={[PopupStyles.inputText, {borderColor: 'red', borderWidth: (mail.length != 0 || isFieldValid[1]) ? 0 : 1}]}
                             autoCapitalize='none'
                             autoComplete='email'
                             keyboardType='email-address'
                             placeholder='Mail.'
-                            onChangeText={(mail) => setMail(mail)}
+                            onChangeText={(mail) => {
+                                setMail(mail)
+                                isFieldValid[1] ? setFieldValid([isFieldValid[0], false, isFieldValid[2], isFieldValid[3], isFieldValid[4]]) : null
+                            }}
                         />
                         {/* Pseudo */}
                         <TextInput
-                            style={PopupStyles.inputText}
+                            style={[PopupStyles.inputText, {borderColor: 'red', borderWidth: (pseudo.length != 0 || isFieldValid[2]) ? 0 : 1}]}
                             autoCapitalize='none'
                             placeholder='Pseudo.'
-                            onChangeText={(pseudo) => setPseudo(pseudo)}
+                            onChangeText={(pseudo) => {
+                                setPseudo(pseudo)
+                                isFieldValid[2] ? setFieldValid([isFieldValid[0], isFieldValid[1], false, isFieldValid[3], isFieldValid[4]]) : null
+                            }}
                         />
                         {/* Password */}
                         <TextInput
-                            style={PopupStyles.inputText}
+                            style={[PopupStyles.inputText, {borderColor: 'red', borderWidth: (password.length != 0 || isFieldValid[3]) ? 0 : 1}]}
                             autoCapitalize='none'
                             placeholder='Password.'
                             secureTextEntry={true}
-                            onChangeText={(password) => setPassword(password)}
+                            onChangeText={(password) => {
+                                setPassword(password)
+                                isFieldValid[3] ? setFieldValid([isFieldValid[0], isFieldValid[1], isFieldValid[2], false, isFieldValid[4]]) : null
+                            }}
                         />
                         {/* Confirm password */}
                         <TextInput
-                            style={PopupStyles.inputText}
+                            style={[PopupStyles.inputText, {/* For password validation*/ marginBottom:0, borderColor: 'red', borderWidth: (passwordConfirm.length != 0 || isFieldValid[4]) ? 0 : 1}]}
                             autoCapitalize='none'
                             placeholder='Confirm password.'
                             secureTextEntry={true}
-                            onChangeText={(passwordConfirm) => setPasswordConfirm(passwordConfirm)}
+                            onChangeText={(passwordConfirm) => {
+                                isFieldValid[4] ? setFieldValid([isFieldValid[0], isFieldValid[1], isFieldValid[2], isFieldValid[3], false]) : null
+                                setPasswordConfirm(passwordConfirm)
+                            }}
                         />
                     </Modal.Body>
 
                     <Modal.Footer>
+                        {/* Password validation */}
+                        {
+                            password === passwordConfirm ? 
+                            <Text style={{color: 'red'}}>
+                                
+                            </Text> 
+                             :
+                            <Text style={{color: 'red'}}>
+                                Passwords do not match
+                            </Text> 
+                        }
+                        
                         {/* Register button */}
                         <TouchableOpacity
-                            style={PopupStyles.buttonRegister}
+                            style={[PopupStyles.buttonRegister, {opacity: imageSource == null || mail.length == 0 || pseudo.length == 0 || password.length == 0 || passwordConfirm.length == 0 || password !== passwordConfirm ? 0.5 : 1}]}
                             onPress={() => {
                                 Register(imageSource, mail, pseudo, password, navigation)
                                 setNewUser(!newUser)
+
                             }}
+                            disabled={imageSource == null || mail.length == 0 || pseudo.length == 0 || password.length == 0 || passwordConfirm.length == 0 || password !== passwordConfirm}
                         >
                             <Text style={styles.loginText}>
                                 Register
@@ -146,18 +262,30 @@ function ConnectionScreen({navigation}) {
                 style={styles.image} 
                 source={require("../assets/log2.png")}
             />
+            
+            {isUserExisting != false ? 
+            <Text style={{color:'#ed2f2f', marginBottom: 5}}>
+            
+            </Text>
+            :
+            <Text style={{color:'#ed2f2f', marginBottom: 5}}>
+                No users with these credentials
+            </Text>}
 
             <TextInput 
-                style={styles.inputText}
+                style={[styles.inputText, {borderColor: 'red', borderWidth: isUserExisting != false && (pseudoConnect.length != 0 || justStarted[0]) ? 0 : 1}]}
                 placeholder="Pseudo."
                 placeholderTextColor="#003f5c"
                 secureTextEntry={false}
                 autoCapitalize='none'
-                onChangeText={(pseudo) => setPseudo(pseudo)}
+                onChangeText={(pseudoConnect) => {
+                    justStarted[0] ? setJustStarted([false, justStarted[1]]) : null
+                    setPseudoConnect(pseudoConnect)
+                }}
             />
 
             <TextInput 
-                style={styles.inputText}
+                style={[styles.inputText, {borderColor: 'red', borderWidth: isUserExisting != false && (passwordConnect.length != 0 || justStarted[1]) ? 0 : 1}]}
                 placeholder="Password."
                 placeholderTextColor="#003f5c"
                 secureTextEntry={isPasswordHidden}
@@ -169,7 +297,10 @@ function ConnectionScreen({navigation}) {
                 //    />
                 //  }
                 //right={<TextInput.Icon name="eye" />}                
-                onChangeText={(password) => setPassword(password)}
+                onChangeText={(passwordConnect) => {
+                    justStarted[1] ? setJustStarted([justStarted[0], false]) : null
+                    setPasswordConnect(passwordConnect)
+                }}
             />
 
             <TouchableOpacity>
@@ -187,8 +318,9 @@ function ConnectionScreen({navigation}) {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={{flexDirection:'row', width:'40%'}}
-                    onPress={() => (Connect(pseudo, password, navigation))}
+                    style={[{flexDirection:'row', width:'40%', opacity: pseudoConnect.length == 0 || passwordConnect.length == 0 ? 0.5 : 1}]}
+                    onPress={() => (Connect(pseudoConnect, passwordConnect, navigation))}
+                    disabled={pseudoConnect.length == 0 || passwordConnect.length == 0}
                 >
                     <View style={styles.triangleCornerRight} />
                     <View style={styles.loginBtn}>
@@ -199,77 +331,13 @@ function ConnectionScreen({navigation}) {
 
             <TouchableOpacity>
                 <Text style={styles.forgot_button}
-                onPress={() => navigation.navigate("UserPage")}> Enter as visitor</Text>
+                onPress={() => {Vibration.vibrate(100); navigation.navigate("UserPage")}}> Enter as visitor</Text>
             </TouchableOpacity>
 
             
 
         </View>
     )
-}
-
-const Connect = (pseudo, password, navigation) => {
-
-    var userCredentials = new URLSearchParams();
-    userCredentials.append('pseudo', pseudo);
-    userCredentials.append('password', password);
-
-    fetch("http://localhost:8000/connect", {
-        method:'POST', 
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: userCredentials.toString() //Don't forget the toString()
-    })
-        .then((res) => {
-            if(res.status != 401){
-                return res.json();
-            }else{
-                throw new Error(res.status);
-            }
-        })
-        .then((data) => {
-            if(data.id){
-                global.userId = data.id;
-                navigation.navigate("UserPage", {id:data.id})
-            }
-        })
-        .catch((error) => {
-            console.log(error)})
-}
-
-const Register = (profile_pic, mail, pseudo, password, navigation) => {
-    var profile_pic_file = {
-        uri: profile_pic,
-        type: 'image/jpeg',
-        name: 'profile_pic.jpg'
-    }
-    var userInformations = new FormData();
-    userInformations.append('profile_picture', profile_pic_file);
-    userInformations.append('mail', mail);
-    userInformations.append('pseudo', pseudo);
-    userInformations.append('password', password);
-
-    fetch('http://localhost:8000/user', {
-        method: 'POST',
-        body: userInformations,
-    })
-        .then((res) => {
-            if(res.status != 401){
-                return res.json();
-            }else{
-                throw new Error(res.status);
-            }
-        })
-        .then((data) => {
-            console.log(data)
-            if(data.id){
-                global.userId = data.id;
-                navigation.navigate("UserPage", {id:data.id})
-            }
-        })
-        .catch((error) => {
-            console.log(error)})
 }
 
 const styles = StyleSheet.create({
