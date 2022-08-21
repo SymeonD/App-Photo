@@ -151,7 +151,8 @@ app.get("/posts", async (req, res) => {
   if(req.query.date){
     posts = await dao.getUserPostsByDate(
       req.query.id,
-      req.query.date
+      req.query.date,
+      req.query.opt
     );
   }else{
     posts = await dao.getUserPostsById( //Id of the user

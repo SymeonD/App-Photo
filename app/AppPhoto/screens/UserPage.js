@@ -146,7 +146,7 @@ function UserPage({route, navigation}){
     }
 
     async function getNotTodaysPosts() {
-        fetch(global.urlAPI+'posts?id='+id_user+'&date=before', {method:"GET"}) // get photos from before today
+        fetch(global.urlAPI+'posts?id='+id_user+"&opt=before"+'&date='+today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'), {method:"GET"}) // get photos from before today
           .then((responsePost) => 
             {
                 if(responsePost.status == 404){
@@ -337,7 +337,7 @@ function UserPage({route, navigation}){
                                 style={styles.buttonImage}
                             >
                                 <Animated.Image
-                                    source={{uri:global.urlAPI+''+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
+                                    source={{uri:global.urlAPI+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
                                     style={styles.image}
                                 >{/*console.log(item)*/}</Animated.Image>
                             </TouchableOpacity>
@@ -373,7 +373,7 @@ function UserPage({route, navigation}){
                                 style={styles.buttonImage}
                             >
                                 <Image
-                                    source={{uri:global.urlAPI+''+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
+                                    source={{uri:global.urlAPI+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
                                     style={styles.image}
                                 >{/*console.log(item)*/}</Image>
                             </TouchableOpacity>

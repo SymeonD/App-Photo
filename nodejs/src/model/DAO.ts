@@ -238,18 +238,14 @@ export class DAO {
               });
     }
 
-    async getUserPostsByDate(id : string, date: string): Promise<Post[]> {
+    async getUserPostsByDate(id : string, date: string, opt: string): Promise<Post[]> {
         var posts: Post[] = [];
         var values: string[] = [
             id, date
         ];
-        if(date == 'before'){
-            let today = new Date();
-            var values: string[] = [
-                id, today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')
-            ];
+        if(opt == 'before'){
             var query: string = 
-            "SELECT * FROM posts WHERE id_user=$1 and date_post!=$2";
+            "SELECT * FROM posts WHERE id_user=$1 and date_post<=$2";
         }else{
             var query: string = 
             "SELECT * FROM posts WHERE id_user=$1 and date_post=$2";
