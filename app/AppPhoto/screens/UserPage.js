@@ -146,6 +146,7 @@ function UserPage({route, navigation}){
     }
 
     async function getNotTodaysPosts() {
+        let today = new Date();
         fetch(global.urlAPI+'posts?id='+id_user+"&opt=before"+'&date='+today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'), {method:"GET"}) // get photos from before today
           .then((responsePost) => 
             {
@@ -187,10 +188,12 @@ function UserPage({route, navigation}){
     }
 
     function createPost(descriptionPost, user_pseudo){
+        let today = new Day()
         var postInformations = new FormData();
         postInformations.append('description', descriptionPost)
         postInformations.append('id_user', dataUser._id_user)
         postInformations.append('localisation', "Dans le camion")
+        postInformations.append('date', today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'))
 
         fetch(global.urlAPI+"post", {
             method: 'POST',
@@ -217,11 +220,13 @@ function UserPage({route, navigation}){
                 }
                 photos.push(temp)
             }
+            //Post every photos
             Promise.all(photos.map(photo => {
                 var postId = new FormData();
                 postId.append('photo', photo),
                 postId.append('id_post', json.id_post)
                 postId.append('pseudo', user_pseudo)
+                postId.append('date', today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'))
                 fetch(global.urlAPI+'photo',{method:'POST',headers:{'Content-Type':'multipart/form-data'},body: postId})
             }))
                 .then((responses) => Promise.all(responses.map(res => res.status == 201 ? null : success = false)))

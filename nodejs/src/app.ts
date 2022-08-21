@@ -182,12 +182,11 @@ app.get("/post", async (req, res) => {
 })
 
 app.post("/post", async (req,res) => {
-  var today = new Date();
   var id_post_resp: string = await dao.createPost(
     req.body["description"],
     req.body["id_user"],
     req.body["localisation"],
-    today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')
+    req.body["date"]
   );
   if(id_post_resp == ''){
     res.status(401).send("The creation didn't went through"); 
@@ -219,8 +218,7 @@ app.post("/photo", async (req, res) => {
     res.status(400).send("Missing file");
   } else {
     let photo = req.files.photo;
-    let today = new Date();
-    url_photo = today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')+'-'+nbr+"."+photo.name.split('.').pop();
+    url_photo = req.body['date']+'-'+nbr+"."+photo.name.split('.').pop();
     photo.mv("./uploads/"+ req.body["pseudo"] + "/" + req.body["id_post"] + "/" + url_photo);
   }
   var success = await dao.postPhoto(
