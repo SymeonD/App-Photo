@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import { View, Vibration, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { View, Vibration, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, KeyboardAvoidingView } from 'react-native';
 import { Modal } from "../components/Modal";
 import { launchImageLibrary } from 'react-native-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -311,7 +311,11 @@ function ConnectionScreen({navigation}) {
                 <Text style={styles.forgot_button}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            <View style={{flexDirection:'row'}}>
+            <KeyboardAvoidingView 
+                style={{flexDirection:'row'}}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={500}
+            >
                 <TouchableOpacity 
                     style={{flexDirection:'row', width:'40%'}}
                     onPress={() => (setNewUser(!newUser))}>
@@ -331,7 +335,7 @@ function ConnectionScreen({navigation}) {
                         <Text style={styles.loginText}>Login</Text>
                     </View>
                 </TouchableOpacity>
-            </View>
+            </KeyboardAvoidingView>
 
             <TouchableOpacity>
                 <Text style={styles.forgot_button}

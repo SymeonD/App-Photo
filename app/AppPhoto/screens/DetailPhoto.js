@@ -8,38 +8,68 @@ const DetailPhoto = ({route, navigation}) => {
     const [post, setPost] = useState(null)
     const [isPostLoading, setPostLoading] = useState(true)
     const dataUser = route.params.user;
+    const photos = route.params.photos;
+    const [index, setIndex] = useState(route.params.index);
 
     //For scroll refresh
     const y = useRef()
+    const x = useRef()
 
     useEffect(() => {
-        fetch(global.urlAPI+'post?id='+photo._id_post, {method:"GET"})
+        fetch(global.urlAPI+'post?id='+photos[index]._id_post, {method:"GET"})
             .then((res) => res.json())
             .then((json) => setPost(json[0]))
             .finally(() => setPostLoading(false))
             .catch((e) => console.error(e))
     })
 
-    function onRefresh() {
+    function closeDetail() {
         navigation.goBack()
-        console.log('refresh')
+    }
+
+    function nextDetail() {
+        //navigation.goBack()
+        if(index < photos.length-1){
+            setIndex(index+1);
+        }
+    }
+
+    function previousDetail() {
+        //navigation.goBack()
+        if(index >= 1){
+            setIndex(index-1);
+        }
     }
 
     return (
         <View
-            onTouchStart={e=> y.current = e.nativeEvent.pageY}
+            onTouchStart={e => {
+                y.current = e.nativeEvent.pageY
+                x.current = e.nativeEvent.pageX
+            }}
             onTouchEnd={e => {
-                // some threshold. add whatever suits you
-                if (y.current - e.nativeEvent.pageY < 100) {
-                    onRefresh()
+                //Down side
+                if ((y.current - e.nativeEvent.pageY) < -200) { //200 To not close when wanting to go next or previous
+                    closeDetail()
                 }
+
+                //Left swipe
+                if ((x.current - e.nativeEvent.pageX) > 100) {
+                    nextDetail()
+                }
+
+                //Right swipe
+                if ((x.current - e.nativeEvent.pageX) < -100) {
+                    previousDetail()
+                }
+                
             }}
         >
             <View
                 style={{borderColor: '#ffb5a7', borderBottomWidth: 10}}
             >
                 <Image
-                    source={{uri:global.urlAPI+dataUser._pseudo_user+'/'+photo._id_post+'/'+photo._link_photo}}
+                    source={{uri:global.urlAPI+dataUser._pseudo_user+'/'+photos[index]._id_post+'/'+photos[index]._link_photo}}
                     style={{width:'100%', aspectRatio:1}}
                 />
             </View>

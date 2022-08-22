@@ -369,7 +369,7 @@ function UserPage({route, navigation}){
                              
                             <TouchableOpacity
                                 onPress={() => {
-                                    setNewPost(showImageDetails(navigation, dataUser, item))
+                                    setNewPost(showImageDetails(navigation, dataUser, index, getPhotosFromPost(dataPostToday, true)))
                                 }}
                                 style={styles.buttonImage}
                             >
@@ -405,7 +405,7 @@ function UserPage({route, navigation}){
                         renderItem={({item, index, separators}) => (
                             <TouchableOpacity
                                 onPress={() => {
-                                    setNewPost(showImageDetails(navigation, dataUser, item))
+                                    setNewPost(showImageDetails(navigation, dataUser, index, getPhotosFromPost(dataPostNotToday, false)))
                                 }}
                                 style={styles.buttonImage}
                             >
@@ -550,11 +550,15 @@ function UserPage({route, navigation}){
     )
 }
 
-const showImageDetails = (navigation, dataUser, photo) => {
-    if(photo._link_photo == 'addPostToday.png'){
+const showImageDetails = (navigation, dataUser, index, photosList) => {
+    if(photosList[index]._link_photo == 'addPostToday.png'){
         return true;
     }else{
-        navigation.navigate('DetailPhoto', {data: photo, user: dataUser})
+        if(photosList[0]._link_photo == 'addPostToday.png'){ //Remove the photo adding post if exists
+            photosList.shift()
+            index--
+        }
+        navigation.navigate('DetailPhoto', {user: dataUser, index: index, photos: photosList})
         return false;
     }
 }
@@ -608,13 +612,14 @@ const styles = StyleSheet.create({
 
     pseudo:{
         fontSize: 30,
-        marginBottom: 5,
+        marginBottom: 0,
         color: "#ffb5a7"
     },
 
     description:{
         fontSize: 15,
-        color: "#ffb5a7"
+        color: "#ffb5a7",
+        paddingTop: 0
     },
 
     profile_pic:{
