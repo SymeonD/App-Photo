@@ -109,9 +109,9 @@ app.post("/connect", async(req,res) => {
 })
 
 app.patch("/user", async (req, res) => {
-  let profile_picture = req.files.profile_picture;
   let url_profile_picture = null
-  if(profile_picture){
+  if(req.files != null && req.files.profile_picture != null){
+    let profile_picture = req.files.profile_picture;
     url_profile_picture = "profile_picture_"+req.body["pseudo"]+"."+profile_picture.name.split('.').pop();
     profile_picture.mv("./uploads/"+ req.body["pseudo"] + "/" + url_profile_picture);
   }

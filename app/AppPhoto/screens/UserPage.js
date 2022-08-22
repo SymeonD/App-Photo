@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, TextInput, Image, Vibration, FlatList, Touchabl
 import { Modal } from "../components/Modal";
 import { launchImageLibrary } from 'react-native-image-picker';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { append } from "express/lib/response";
 
 function UserPage({route, navigation}){
     const id_user = route.params.id;
@@ -273,6 +274,31 @@ function UserPage({route, navigation}){
                 console.log('The patch issued an error : '+e)})
     }
 
+    //patch user description
+    function patchUser(description) {
+        let userInformations = new FormData();
+        userInformations.append('description', description);
+        userInformations.append('id', dataUser._id_user) //Need this for patch
+        userInformations.append('pseudo', dataUser._pseudo_user) //Need this for patch
+
+        fetch(global.urlAPI+'user', {
+            method:'PATCH', 
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            },
+            body: userInformations
+        })
+            .then((res) => {
+                if(res.status == 500){
+                    console.log('An error occured during the patch')
+                }else{
+                    console.log('The user was patched')
+                }
+            })
+            .catch((e) => {
+                console.log('The patch issued an error : '+e)})
+    }
+
     return (
         <View 
             style={{flex: 1, flexDirection: "column", backgroundColor: "#f8edeb"}}
@@ -310,9 +336,15 @@ function UserPage({route, navigation}){
                         <Text style={styles.pseudo}>
                             {isLoadingUser ? "loading pseudo" : dataUser._pseudo_user}
                         </Text>
-                        <Text style={styles.description}>
+
+                        <TextInput 
+                            style={styles.description}
+                            onEndEditing={(resEdit) => {
+                                patchUser(resEdit.nativeEvent.text)
+                            }}    
+                        >
                             {isLoadingUser ? "Loading description" : dataUser._description_user}
-                        </Text>
+                        </TextInput>
                     </View> 
                 </View>
                 
