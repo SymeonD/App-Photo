@@ -338,8 +338,14 @@ function ConnectionScreen({navigation}) {
             </KeyboardAvoidingView>
 
             <TouchableOpacity>
-                <Text style={styles.forgot_button}
-                onPress={() => {Vibration.vibrate(100); navigation.navigate("UserPage")}}> Enter as visitor</Text>
+                <Text 
+                    style={styles.forgot_button}
+                    onPress={() => {Vibration.vibrate(100); 
+                        navigation.navigate("VisitorPage")
+                    }}
+                > 
+                    Enter as visitor
+                </Text>
             </TouchableOpacity>
 
             

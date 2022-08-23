@@ -1,1 +1,2 @@
-/uploadedFiles
+uploadedFiles/*
+!uploadedFiles/resources

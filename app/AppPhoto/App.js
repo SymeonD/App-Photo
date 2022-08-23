@@ -4,7 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import ConnectionScreen from "./screens/Connection";
 import UserPage from "./screens/UserPage";
-import DetailPhoto from './screens/DetailPhoto'
+import DetailPhoto from './screens/DetailPhoto';
+import VisitorPage from './screens/VisitorPage';
 
 const Stack = createNativeStackNavigator();
 
@@ -15,6 +16,7 @@ export default function App() {
             <Stack.Screen name="ConnectionScreen" component={ConnectionScreen} />
             <Stack.Screen name="UserPage" component={UserPage} />
             <Stack.Screen name="DetailPhoto" component={DetailPhoto} />
+            <Stack.Screen name='VisitorPage' component={VisitorPage} />
         </Stack.Navigator>
     }</NavigationContainer>
   );

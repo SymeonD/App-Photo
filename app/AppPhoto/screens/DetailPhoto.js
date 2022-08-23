@@ -43,6 +43,7 @@ const DetailPhoto = ({route, navigation}) => {
 
     return (
         <View
+            style={{backgroundColor: '#f8edeb'}}
             onTouchStart={e => {
                 y.current = e.nativeEvent.pageY
                 x.current = e.nativeEvent.pageX
