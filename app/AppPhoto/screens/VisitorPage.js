@@ -19,7 +19,6 @@ function VisitorPage({route, navigation}){
                             .then((responsesJson) => Promise.all(responsesJson.map(responseJson => lasts.push(responseJson[0])))
                                 .then(() => setLastResearch(lasts))
                                 .then(() => setLastResearchUpdated(true))
-                                .then(() => console.log(lastResearch))
                             )
                         )
                 })
@@ -28,7 +27,7 @@ function VisitorPage({route, navigation}){
 
     return (
         <View
-            style={{margin: 10, backgroundColor: '#f8edeb'}}
+            style={{padding: 10, backgroundColor: '#f8edeb', height: '100%'}}
         >
             {/* Header */}
             <View style={{alignItems: "center", height:50}}>
@@ -67,11 +66,19 @@ function VisitorPage({route, navigation}){
                 )}
             />
 
-            <Image
-                source={{uri:urlAPI+'/resources/visitorNotLogged'}}
-                style={styles.imageNotLogged}
-            />
-
+            <View
+                style={styles.viewVisitorMode}
+            >
+                <Image
+                    source={{uri:urlAPI+'/resources/visitorNotLogged.png'}}
+                    style={styles.imageNotLogged}
+                />
+                <Text
+                    style={styles.textVisitor}
+                >
+                    Visitor mode
+                </Text>
+            </View>
         </View>
     )
 }
@@ -110,8 +117,23 @@ const styles = StyleSheet.create({
         fontSize: 20,
     },
 
+    viewVisitorMode: {
+        marginBottom: 50,
+    },  
+
     imageNotLogged: {
-        
+        alignSelf: 'center',
+        marginBottom: 0,
+        height: 300,
+        aspectRatio: 1,
+        opacity: 0.5
+    },
+
+    textVisitor: {
+        marginTop: -25,
+        color: '#ffb5a7',
+        fontSize: 20,
+        alignSelf: 'center'
     }
 })
 
