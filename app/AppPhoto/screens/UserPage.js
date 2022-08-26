@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TextInput, Image, Vibration, FlatList, TouchableOpacity, Animated, Alert, ScrollView, RefreshControl, Dimensions } from "react-native";
+import { View, Text, StyleSheet, TextInput, Image, Vibration, FlatList, TouchableOpacity, Animated, Alert, ScrollView, RefreshControl, Dimensions, KeyboardAvoidingView } from "react-native";
 //import { TextInput } from "react-native-paper";
 import { Modal } from "../components/Modal";
 import { launchImageLibrary } from 'react-native-image-picker';
+
+import SearchButton from './modules/SearchButton.js';
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { append } from "express/lib/response";
 
 function UserPage({route, navigation}){
-    const id_user = route.params.id;
+    const id_user = route.params.id; //User of the page showing != global user (user logged)
     
     const isSameUser = (global.userId == id_user); //For editing profile
 
@@ -39,6 +42,17 @@ function UserPage({route, navigation}){
         getNotTodaysPosts();
         setTimeout(() => {setRefreshing(false)}, 2000)
     }, []);
+
+    //Search button options
+
+    const [searching, setSearching] = useState(false)
+
+    const [pageOffset, setPageOffset] = useState(0);
+
+    const {height: fullHeight} = Dimensions.get('window');
+
+    
+
 
     //Get the informations of the user
     //Get today's posts and photos
@@ -302,6 +316,13 @@ function UserPage({route, navigation}){
     return (
         <View 
             style={{flex: 1, flexDirection: "column", backgroundColor: "#f8edeb"}}
+            onLayout = {({
+                nativeEvent: {
+                  layout: {height},
+                },
+              }) => {
+                setPageOffset(fullHeight - height)
+              }}
         >
             {/* Header */}
             <View style={{alignItems: "center", height:50}}>
@@ -316,7 +337,7 @@ function UserPage({route, navigation}){
                 <View style={{flexDirection:"row", alignItems:"center", margin: 10, justifyContent:"space-between"}}>
                     {isLoadingUser ? <Text>Loading profile picture</Text> : 
                     <TouchableOpacity
-                        onPress={() => selectImages('profile_pic')}
+                        onPress={() => isSameUser ? selectImages('profile_pic') : null}
                     >
                         {imageReload ? 
                             <Image 
@@ -546,6 +567,8 @@ function UserPage({route, navigation}){
                     </Modal.Footer>  
                 </Modal.Container>      
             </Modal>
+
+            <SearchButton />
         </View>
     )
 }
@@ -737,6 +760,32 @@ const PopupStyles = StyleSheet.create({
         height:30,
         color: '#f9dcc4'
     },
+})
+
+const SearchStyle = StyleSheet.create({
+    ButtonSearch:{
+        borderRadius: 100, 
+        height: '15%', 
+        aspectRatio: 1, 
+        backgroundColor: '#f9dcc4',
+        justifyContent: 'center',
+        marginTop: '-33%',
+        alignSelf: 'flex-end',
+        flexDirection: 'row'
+    }, 
+
+    InputSearch:{
+        height: '100%',
+        width: '80%',
+        marginLeft: 10,
+        fontSize: 15
+    },  
+
+    ImageSearch:{
+        height: '70%', 
+        aspectRatio: 842/936, 
+        alignSelf: 'center'
+    }
 })
 
 export default UserPage;
