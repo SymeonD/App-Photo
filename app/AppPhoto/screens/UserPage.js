@@ -7,7 +7,6 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import SearchButton from './modules/SearchButton.js';
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { append } from "express/lib/response";
 
 function UserPage({route, navigation}){
     const id_user = route.params.id; //User of the page showing != global user (user logged)
@@ -338,6 +337,7 @@ function UserPage({route, navigation}){
                     {isLoadingUser ? <Text>Loading profile picture</Text> : 
                     <TouchableOpacity
                         onPress={() => isSameUser ? selectImages('profile_pic') : null}
+                        activeOpacity={isSameUser ? 0.5 : 1}
                     >
                         {imageReload ? 
                             <Image 
@@ -362,7 +362,8 @@ function UserPage({route, navigation}){
                             style={styles.description}
                             onEndEditing={(resEdit) => {
                                 patchUser(resEdit.nativeEvent.text)
-                            }}    
+                            }}   
+                            editable={isSameUser ? true : false} 
                         >
                             {isLoadingUser ? "Loading description" : dataUser._description_user}
                         </TextInput>
@@ -385,12 +386,12 @@ function UserPage({route, navigation}){
                         horizontal={false} 
                         numColumns={3}
                         showsHorizontalScrollIndicator={false}
-                        data={getPhotosFromPost(dataPostToday, true)}
+                        data={getPhotosFromPost(dataPostToday, true, isSameUser)}
                         renderItem={({item, index, separators}) => (
                              
                             <TouchableOpacity
                                 onPress={() => {
-                                    setNewPost(showImageDetails(navigation, dataUser, index, getPhotosFromPost(dataPostToday, true)))
+                                    setNewPost(showImageDetails(navigation, dataUser, index, getPhotosFromPost(dataPostToday, true, isSameUser)))
                                 }}
                                 style={styles.buttonImage}
                             >
@@ -422,11 +423,11 @@ function UserPage({route, navigation}){
                         horizontal={false} 
                         numColumns={3}
                         showsHorizontalScrollIndicator={false} 
-                        data={getPhotosFromPost(dataPostNotToday, false)}
+                        data={getPhotosFromPost(dataPostNotToday, false, isSameUser)}
                         renderItem={({item, index, separators}) => (
                             <TouchableOpacity
                                 onPress={() => {
-                                    setNewPost(showImageDetails(navigation, dataUser, index, getPhotosFromPost(dataPostNotToday, false)))
+                                    setNewPost(showImageDetails(navigation, dataUser, index, getPhotosFromPost(dataPostNotToday, false, isSameUser)))
                                 }}
                                 style={styles.buttonImage}
                             >
@@ -568,7 +569,7 @@ function UserPage({route, navigation}){
                 </Modal.Container>      
             </Modal>
 
-            <SearchButton />
+            <SearchButton navigationProps={navigation} />
         </View>
     )
 }
@@ -586,10 +587,10 @@ const showImageDetails = (navigation, dataUser, index, photosList) => {
     }
 }
 
-const getPhotosFromPost = (posts, newPost) => {
+const getPhotosFromPost = (posts, newPost, isSameUser) => {
     let photos = []
     if(posts.length == 0){
-        if(newPost){
+        if(newPost && isSameUser){
             photos.push({
                 _id_photo:'',
                 _id_post:'resources',
@@ -598,7 +599,7 @@ const getPhotosFromPost = (posts, newPost) => {
         }
         return(photos)
     }else{
-        if(newPost){
+        if(newPost && isSameUser){
             photos.push({
                 _id_photo:'',
                 _id_post:'resources',

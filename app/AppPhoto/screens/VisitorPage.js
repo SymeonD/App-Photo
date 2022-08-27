@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useState, useEffect } from "react";
 import { View, Text, Image, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { Button } from "react-native-paper";
+import  SearchButton  from './modules/SearchButton';
 
 function VisitorPage({route, navigation}){
 
@@ -14,13 +14,15 @@ function VisitorPage({route, navigation}){
             AsyncStorage.getItem('lastResearch') //Get Ids of the last searched profiles
                 .then((res) => JSON.parse(res))
                 .then((json) => {
-                    Promise.all(json.map(last => fetch(global.urlAPI+'user?id='+last, {method:'GET'})))
+                    if(json && json.length >= 1){
+                        Promise.all(json.map(last => fetch(global.urlAPI+'user?id='+last, {method:'GET'})))
                         .then((responses) => Promise.all(responses.map(response => response.json()))
                             .then((responsesJson) => Promise.all(responsesJson.map(responseJson => lasts.push(responseJson[0])))
                                 .then(() => setLastResearch(lasts))
                                 .then(() => setLastResearchUpdated(true))
                             )
                         )
+                    }
                 })
         }
     })
@@ -79,6 +81,8 @@ function VisitorPage({route, navigation}){
                     Visitor mode
                 </Text>
             </View>
+
+            <SearchButton navigationProps={navigation} />
         </View>
     )
 }

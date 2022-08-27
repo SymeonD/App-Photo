@@ -1,12 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { TouchableOpacity, KeyboardAvoidingView, View, Image, TextInput, StyleSheet, TouchableWithoutFeedback, Keyboard, Platform, BackHandler } from 'react-native'
+import { TouchableOpacity, KeyboardAvoidingView, View, Image, TextInput, StyleSheet, TouchableWithoutFeedback, Keyboard, Platform, BackHandler, Text } from 'react-native'
 import DropShadow from 'react-native-drop-shadow';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export default function SearchButton({route, navigation}) {
+export default function SearchButton(props) {
 
+    //Boolean for button styles
     const [searching, setSearching] = useState(false)
 
-    const [pageOffset, setPageOffset] = useState(0);
+    //String value of the search input
+    const [searchedUser, setSearchedUser] = useState(null);
+
+    //Value of the placeholder
+    const [placeHolderUser, setPlaceHolderUser] = useState('Enter a user pseudo')
+
+    function searchUser(pseudo) {
+        if(!pseudo || (pseudo && pseudo.replace(/\s+/g, '') == '')){
+            setSearching(false)
+        }else{
+            fetch(global.urlAPI+'user?pseudo='+pseudo)
+                .then((res) => res.status == '404' ? [] : res.json())
+                .then((json) => {
+                    if(json.length == 1){
+                        AsyncStorage.getItem('lastResearch')
+                            .then((resResearch) => JSON.parse(resResearch))
+                            .then((jsonResearch) => {
+                                jsonResearch.push(json[0]._id_user)
+                                return jsonResearch //Return the list
+                            })
+                            .then((listSearch) => AsyncStorage.setItem('lastResearch', JSON.stringify(listSearch))
+                                    .then(() => {
+                                        setSearching(false)
+                                        props.navigationProps.navigate('UserPage', {id : json[0]._id_user})
+                                    })
+                            )
+                        
+                    }else if(json.length >= 1){
+                        //TODO: Implement list of results
+                    }else{ //No users with the pseudo
+                        setPlaceHolderUser('No users found with this pseudo')
+                        setSearchedUser('')
+                        setTimeout(() => {
+                            setPlaceHolderUser('Enter a user pseudo')
+                        }, 3000)
+                    }
+                }) 
+                .catch((e) => console.error(e))
+        }
+    }
 
     return (
         /*
@@ -21,7 +62,8 @@ export default function SearchButton({route, navigation}) {
         <DropShadow
             style={[SearchStyle.ViewSearch, {
                 width: searching ? '95%' : null, //Set width of the view depending on the keyboard state
-                height: searching ? 50 : '1%' //Set height of the view depending on the keyboard state
+                height: searching ? 50 : '13%', //Set height of the view depending on the keyboard state
+                shadowOpacity: searching ? 0.1 : 0.7,
             }]}
         >
             <KeyboardAvoidingView
@@ -43,17 +85,24 @@ export default function SearchButton({route, navigation}) {
                             height: searching ? 50 : '100%', 
                             aspectRatio : searching ? 10/1 : 1,
                             justifyContent: searching ? 'flex-start' : 'center'}]}
-                            onPress={() => setSearching(!searching)}
+                            onPress={() => {
+                                    searching ? searchUser(searchedUser) : setSearching(!searching)
+                                }}
                     >
                         {searching ?
                         <TextInput
                             style={SearchStyle.InputSearch}
-                            placeholder='User pseudo'
+                            placeholder={placeHolderUser}
                             autoFocus={true}
                             onBlur={() => {
                                 setSearching(!searching)
                             }}
                             returnKeyType='search'
+                            onChangeText={(text) => setSearchedUser(text)}
+                            onSubmitEditing={() => searchUser(searchedUser)}
+                            blurOnSubmit={false} //Stop keyboard from hiding when submitting
+                            autoCapitalize={'none'}
+                            autoCorrect={false}
                         />
                         : null}
                         <View
@@ -90,7 +139,6 @@ const SearchStyle = StyleSheet.create({
             width: 0,
             height: 0,
         },
-        shadowOpacity: 0.7,
         shadowRadius: 5,
     },
 
