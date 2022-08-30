@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { TouchableOpacity, KeyboardAvoidingView, View, Image, TextInput, StyleSheet, TouchableWithoutFeedback, Keyboard, Platform, BackHandler, Text } from 'react-native'
+import React, { useState, useEffect, useRef } from 'react';
+import { TouchableOpacity, KeyboardAvoidingView, View, Image, TextInput, Easing, StyleSheet, TouchableWithoutFeedback, Keyboard, Platform, BackHandler, Text, Animated } from 'react-native'
 import DropShadow from 'react-native-drop-shadow';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -14,6 +14,19 @@ export default function SearchButton(props) {
     //Value of the placeholder
     const [placeHolderUser, setPlaceHolderUser] = useState('Enter a user pseudo')
 
+    //Shake animation
+    const animation = useRef(new Animated.Value(0)).current
+    const [shake, setShake] = useState(0)
+
+    useEffect(() => {
+        Animated.timing(animation, {
+            toValue: shake,
+            duration: 500,
+            easing: Easing.linear,
+            useNativeDriver: true
+        }).start()
+    }, [shake])
+
     function searchUser(pseudo) {
         if(!pseudo || (pseudo && pseudo.replace(/\s+/g, '') == '')){
             setSearching(false)
@@ -22,22 +35,31 @@ export default function SearchButton(props) {
                 .then((res) => res.status == '404' ? [] : res.json())
                 .then((json) => {
                     if(json.length == 1){
-                        AsyncStorage.getItem('lastResearch')
+                        AsyncStorage.getItem('lastResearch') //First get the elements already in the lastSearch
                             .then((resResearch) => JSON.parse(resResearch))
                             .then((jsonResearch) => {
-                                jsonResearch.push(json[0]._id_user)
+                                if(jsonResearch == null){ //If empty create the list
+                                    jsonResearch = []
+                                }else{  //If exists remove if pseudo already in it
+                                    const index = jsonResearch.indexOf(json[0]._id_user)
+                                    if(index != -1){ //if found
+                                        jsonResearch.splice(index, 1)
+                                    }
+                                }
+                                jsonResearch.unshift(json[0]._id_user) //Append the new one to the first element of the array
                                 return jsonResearch //Return the list
                             })
                             .then((listSearch) => AsyncStorage.setItem('lastResearch', JSON.stringify(listSearch))
                                     .then(() => {
                                         setSearching(false)
-                                        props.navigationProps.navigate('UserPage', {id : json[0]._id_user})
+                                        props.navigationProps.push('UserPage', {id : json[0]._id_user})
                                     })
                             )
                         
                     }else if(json.length >= 1){
                         //TODO: Implement list of results
                     }else{ //No users with the pseudo
+                        setShake(1-shake) //shake the input text
                         setPlaceHolderUser('No users found with this pseudo')
                         setSearchedUser('')
                         setTimeout(() => {
@@ -72,6 +94,7 @@ export default function SearchButton(props) {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : -500}
                 enabled={true}
             >
+                
                 <TouchableWithoutFeedback
                     onPress={() => {
                         Keyboard.dismiss
@@ -79,41 +102,64 @@ export default function SearchButton(props) {
                     }}
                     style={{flex:1}}
                 >
-                    {/* Search button */}
-                    <TouchableOpacity
-                        style={[SearchStyle.ButtonSearch, {
-                            height: searching ? 50 : '100%', 
-                            aspectRatio : searching ? 10/1 : 1,
-                            justifyContent: searching ? 'flex-start' : 'center'}]}
-                            onPress={() => {
-                                    searching ? searchUser(searchedUser) : setSearching(!searching)
-                                }}
+                    <Animated.View
+                        style={{
+                            transform: [
+                                {
+                                    translateX: animation.interpolate({
+                                        inputRange: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+                                        outputRange: [0, 0, 10, 0, -10, 0, 10, 0, -10, 0, 0]
+                                    })
+                                },
+                                /*
+                                {
+                                    translateY: animation.interpolate({
+                                        inputRange: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+                                        outputRange: [0, 0, 0, 0, 0, 0, 10, -10, 10, -10, 0]
+                                    })
+                                }
+                                */
+                            ]
+                        }}
                     >
-                        {searching ?
-                        <TextInput
-                            style={SearchStyle.InputSearch}
-                            placeholder={placeHolderUser}
-                            autoFocus={true}
-                            onBlur={() => {
-                                setSearching(!searching)
-                            }}
-                            returnKeyType='search'
-                            onChangeText={(text) => setSearchedUser(text)}
-                            onSubmitEditing={() => searchUser(searchedUser)}
-                            blurOnSubmit={false} //Stop keyboard from hiding when submitting
-                            autoCapitalize={'none'}
-                            autoCorrect={false}
-                        />
-                        : null}
-                        <View
-                            style={{justifyContent: 'center'}}
+                        {/* Search button */}
+                        <TouchableOpacity
+                            style={[SearchStyle.ButtonSearch, {
+                                height: searching ? 50 : '100%', 
+                                aspectRatio : searching ? 10/1 : 1,
+                                justifyContent: searching ? 'flex-start' : 'center'}]}
+                                onPress={() => {
+                                        searching ? searchUser(searchedUser) : setSearching(!searching)
+                                    }}
                         >
-                            <Image
-                                source={require('../../assets/Search.png')}
-                                style={SearchStyle.ImageSearch}
-                            />
-                        </View>
-                    </TouchableOpacity>
+                            {searching ?
+                                
+                                    <TextInput
+                                        style={[SearchStyle.InputSearch]}
+                                        placeholder={placeHolderUser}
+                                        autoFocus={true}
+                                        onBlur={() => {
+                                            setSearching(!searching)
+                                        }}
+                                        returnKeyType='search'
+                                        onChangeText={(text) => setSearchedUser(text)}
+                                        onSubmitEditing={() => searchUser(searchedUser)}
+                                        blurOnSubmit={false} //Stop keyboard from hiding when submitting
+                                        autoCapitalize={'none'}
+                                        autoCorrect={false}
+                                    />
+                                
+                            : null}
+                            <View
+                                style={{justifyContent: 'center'}}
+                            >
+                                <Image
+                                    source={require('../../assets/Search.png')}
+                                    style={SearchStyle.ImageSearch}
+                                />
+                            </View>
+                        </TouchableOpacity>
+                    </Animated.View>
                 </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
         </DropShadow>
@@ -144,7 +190,7 @@ const SearchStyle = StyleSheet.create({
 
     ButtonSearch:{
         borderRadius: 100, 
-        maxWidth:'100%',
+        maxWidth:'105%',
         aspectRatio: 1, 
         backgroundColor: '#f9dcc4',
         justifyContent: 'center',

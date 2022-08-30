@@ -9,6 +9,7 @@ import SearchButton from './modules/SearchButton.js';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function UserPage({route, navigation}){
+
     const id_user = route.params.id; //User of the page showing != global user (user logged)
     
     const isSameUser = (global.userId == id_user); //For editing profile
@@ -49,7 +50,6 @@ function UserPage({route, navigation}){
     const [pageOffset, setPageOffset] = useState(0);
 
     const {height: fullHeight} = Dimensions.get('window');
-
     
 
 
@@ -126,35 +126,37 @@ function UserPage({route, navigation}){
             if(response.status == 404){
                 setdataPostToday([])
                 setLoadingPostToday(false)
-                throw('no posts today')
+                return null
             }else{
                 return response.json()
             }})
           .then((jsonPost) => {
-            let posts = [];
-            let urls = [];
-            for(let i of jsonPost){
-                urls.push(global.urlAPI+'photos?id='+i._id_post)
-                posts.push({post: i, photos: null})
-            }
-            Promise.all(urls.map(url => fetch(url)))
-                .then((responses) => Promise.all(responses.map(res => res.status != '404' ? res.json() : null))
-                    .then((json) => {
-                        let numPost = 0
-                        for(let j of json){ //For every post
-                            let photosPost = []
-                            if(j != null){
-                                for(let k of j){ //For every photo
-                                    photosPost.push(k)
+            if(jsonPost){ //If there is posts
+                let posts = [];
+                let urls = [];
+                for(let i of jsonPost){
+                    urls.push(global.urlAPI+'photos?id='+i._id_post)
+                    posts.push({post: i, photos: null})
+                }
+                Promise.all(urls.map(url => fetch(url)))
+                    .then((responses) => Promise.all(responses.map(res => res.status != '404' ? res.json() : null))
+                        .then((json) => {
+                            let numPost = 0
+                            for(let j of json){ //For every post
+                                let photosPost = []
+                                if(j != null){
+                                    for(let k of j){ //For every photo
+                                        photosPost.push(k)
+                                    }
                                 }
+                                posts[numPost].photos = photosPost
+                                numPost += 1;
                             }
-                            posts[numPost].photos = photosPost
-                            numPost += 1;
-                        }
-                    })
-                    .then(() => setdataPostToday(posts))
-                    .finally(() => setLoadingPostToday(false))
-                )
+                        })
+                        .then(() => setdataPostToday(posts))
+                        .finally(() => setLoadingPostToday(false))
+                    )
+            }
           })
           .catch((error) => console.error(error))
     }
@@ -167,36 +169,38 @@ function UserPage({route, navigation}){
                 if(responsePost.status == 404){
                     setdataPostNotToday([])
                     setLoadingPostNotToday(false)
-                    throw('no posts')
+                    return null
                 }else{
                     return responsePost.json()
                 }
             })
           .then((jsonPost) => { //json of all posts
-            let urls = [];
-            let posts = [];
-            for(let i of jsonPost){ //Get all photos from the posts
-                urls.push(global.urlAPI+'photos?id='+i._id_post)
-                posts.push({post: i, photos: null})
-            }
-            Promise.all(urls.map(url => fetch(url)))
-                .then((responses) => Promise.all(responses.map(res => res.status != '404' ? res.json() : null))
-                    .then((json) => {
-                        let numPost = 0
-                        for(let j of json){ //For every post
-                            let photosPost = []
-                            if(j != null){
-                                for(let k of j){ //For every photo
-                                    photosPost.push(k)
+            if(jsonPost){ //If there is posts
+                let urls = [];
+                let posts = [];
+                for(let i of jsonPost){ //Get all photos from the posts
+                    urls.push(global.urlAPI+'photos?id='+i._id_post)
+                    posts.push({post: i, photos: null})
+                }
+                Promise.all(urls.map(url => fetch(url)))
+                    .then((responses) => Promise.all(responses.map(res => res.status != '404' ? res.json() : null))
+                        .then((json) => {
+                            let numPost = 0
+                            for(let j of json){ //For every post
+                                let photosPost = []
+                                if(j != null){
+                                    for(let k of j){ //For every photo
+                                        photosPost.push(k)
+                                    }
                                 }
+                                posts[numPost].photos = photosPost
+                                numPost += 1;
                             }
-                            posts[numPost].photos = photosPost
-                            numPost += 1;
-                        }
-                    })
-                    .then(() => setdataPostNotToday(posts))
-                    .finally(() => setLoadingPostNotToday(false))
-                )
+                        })
+                        .then(() => setdataPostNotToday(posts))
+                        .finally(() => setLoadingPostNotToday(false))
+                    )
+            }
           })
           .catch((error) => console.error(error))
     }
@@ -381,28 +385,31 @@ function UserPage({route, navigation}){
                         style={styles.imageText}
                     />
                     {isLoadingPostToday ? <Text>Loading...</Text> : 
-                    <FlatList
-                        style={{width:'100%'}}
-                        horizontal={false} 
-                        numColumns={3}
-                        showsHorizontalScrollIndicator={false}
-                        data={getPhotosFromPost(dataPostToday, true, isSameUser)}
-                        renderItem={({item, index, separators}) => (
-                             
-                            <TouchableOpacity
-                                onPress={() => {
-                                    setNewPost(showImageDetails(navigation, dataUser, index, getPhotosFromPost(dataPostToday, true, isSameUser)))
-                                }}
-                                style={styles.buttonImage}
-                            >
-                                <Animated.Image
-                                    source={{uri:global.urlAPI+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
-                                    style={styles.image}
-                                >{/*console.log(item)*/}</Animated.Image>
-                            </TouchableOpacity>
-                                
-                        )}
-                    />}
+                        {...getPhotosFromPost(dataPostToday, true, isSameUser).length <= 1 && !isSameUser ? <View style={{justifyContent:'center', flex:1}}><Text style ={styles.noPost}>No posts for now</Text></View> : 
+                            <FlatList
+                                style={{width:'100%'}}
+                                horizontal={false} 
+                                numColumns={3}
+                                showsHorizontalScrollIndicator={false}
+                                data={getPhotosFromPost(dataPostToday, true, isSameUser)}
+                                renderItem={({item, index, separators}) => (
+                                    
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setNewPost(showImageDetails(navigation, dataUser, index, getPhotosFromPost(dataPostToday, true, isSameUser)))
+                                        }}
+                                        style={styles.buttonImage}
+                                    >
+                                        <Animated.Image
+                                            source={{uri:global.urlAPI+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
+                                            style={styles.image}
+                                        ></Animated.Image>
+                                    </TouchableOpacity>
+                                        
+                                )}
+                            />
+                        }
+                    }
                 </View>
 
                 {/* Line not today */}
@@ -412,33 +419,36 @@ function UserPage({route, navigation}){
                         style={styles.imageText}
                     />
                     {isLoadingPostNotToday ? <Text>Loading...</Text> : 
-                    <FlatList
-                        refreshControl={
-                            <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
+                        {...getPhotosFromPost(dataPostNotToday, false, isSameUser).length <= 1 && !isSameUser ? <View style={{justifyContent:'center', flex:1}}><Text style ={styles.noPost}>No posts for now</Text></View> : 
+                            <FlatList
+                                refreshControl={
+                                    <RefreshControl
+                                    refreshing={refreshing}
+                                    onRefresh={onRefresh}
+                                    />
+                                }
+                                style={{width:'100%'}}
+                                horizontal={false} 
+                                numColumns={3}
+                                showsHorizontalScrollIndicator={false} 
+                                data={getPhotosFromPost(dataPostNotToday, false, isSameUser)} //Paraeters: PostList, isNewPost, isSameUser
+                                renderItem={({item, index, separators}) => (
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setNewPost(showImageDetails(navigation, dataUser, index, getPhotosFromPost(dataPostNotToday, false, isSameUser)))
+                                        }}
+                                        style={styles.buttonImage}
+                                    >
+                                        <Image
+                                            source={{uri:global.urlAPI+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
+                                            style={styles.image}
+                                        >{/*console.log(item)*/}</Image>
+                                    </TouchableOpacity>
+                                    
+                                )}
                             />
                         }
-                        style={{width:'100%'}}
-                        horizontal={false} 
-                        numColumns={3}
-                        showsHorizontalScrollIndicator={false} 
-                        data={getPhotosFromPost(dataPostNotToday, false, isSameUser)}
-                        renderItem={({item, index, separators}) => (
-                            <TouchableOpacity
-                                onPress={() => {
-                                    setNewPost(showImageDetails(navigation, dataUser, index, getPhotosFromPost(dataPostNotToday, false, isSameUser)))
-                                }}
-                                style={styles.buttonImage}
-                            >
-                                <Image
-                                    source={{uri:global.urlAPI+dataUser._pseudo_user+'/'+item._id_post+'/'+item._link_photo}}
-                                    style={styles.image}
-                                >{/*console.log(item)*/}</Image>
-                            </TouchableOpacity>
-                            
-                        )}
-                    />}
+                    }
                 </View>
             </View>
 
@@ -569,7 +579,7 @@ function UserPage({route, navigation}){
                 </Modal.Container>      
             </Modal>
 
-            <SearchButton navigationProps={navigation} />
+            <SearchButton navigationProps={navigation}/>
         </View>
     )
 }
@@ -704,6 +714,13 @@ const styles = StyleSheet.create({
         height: 30,
         aspectRatio: 2076/171
     },
+
+    noPost:{
+        fontSize: 20,
+        opacity: 0.7,
+        
+        alignSelf: 'center'
+    },  
 })
 
 const PopupStyles = StyleSheet.create({
