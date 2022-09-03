@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Image, Text, StyleSheet } from "react-native";
+import { View, Image, Text, StyleSheet, Dimensions, ScrollView } from "react-native";
 
 
 
@@ -23,6 +23,20 @@ const DetailPhoto = ({route, navigation}) => {
             .catch((e) => console.error(e))
     })
 
+    //Image sizes
+    const [imageHeight, setImageHeight] = useState(0);
+    const [imageWidth, setImageWidth] = useState(0);
+    const [ratio, setRatio] = useState(1)
+
+    useEffect(() => {
+        Image.getSize(global.urlAPI+dataUser._pseudo_user+'/'+photos[index]._id_post+'/'+photos[index]._link_photo, (width, height) => {     
+            setImageHeight(height); 
+            setImageWidth(width);
+            setRatio(Math.min(Dimensions.get('window').height / height , Dimensions.get('window').width / width))
+        })
+        console.log(ratio)
+    }, [index])
+
     function closeDetail() {
         navigation.goBack()
     }
@@ -42,62 +56,65 @@ const DetailPhoto = ({route, navigation}) => {
     }
 
     return (
-        <View
-            style={{backgroundColor: '#f8edeb'}}
-            onTouchStart={e => {
-                y.current = e.nativeEvent.pageY
-                x.current = e.nativeEvent.pageX
-            }}
-            onTouchEnd={e => {
-                //Down side
-                if ((y.current - e.nativeEvent.pageY) < -200) { //200 To not close when wanting to go next or previous
-                    closeDetail()
-                }
-
-                //Left swipe
-                if ((x.current - e.nativeEvent.pageX) > 100) {
-                    nextDetail()
-                }
-
-                //Right swipe
-                if ((x.current - e.nativeEvent.pageX) < -100) {
-                    previousDetail()
-                }
-                
-            }}
-        >
+        <ScrollView>
             <View
-                style={{borderColor: '#ffb5a7', borderBottomWidth: 10}}
-            >
-                <Image
-                    source={{uri:global.urlAPI+dataUser._pseudo_user+'/'+photos[index]._id_post+'/'+photos[index]._link_photo}}
-                    style={{width:'100%', aspectRatio:1}}
-                />
-            </View>
-            {isPostLoading ? <Text>'Loading Location...'</Text> : 
-            <View style={styles.viewLoc}>
-                <Image
-                    source={require('../assets/Location.png')}
-                    style={styles.logos}
-                />
-                <Text
-                    style={styles.localisation}
-                >{post._localisation_post}</Text>
-            </View>
-            }
+                style={{backgroundColor: '#f8edeb'}}
+                onTouchStart={e => {
+                    y.current = e.nativeEvent.pageY
+                    x.current = e.nativeEvent.pageX
+                }}
+                onTouchEnd={e => {
+                    //Down side
+                    if ((y.current - e.nativeEvent.pageY) < -200) { //200 To not close when wanting to go next or previous
+                        closeDetail()
+                    }
 
-            {isPostLoading ? <Text>'Loading Description...'</Text> : 
-            <View style={styles.viewDesc}>
-                <Image 
-                    source={require('../assets/Description.png')}
-                    style={styles.logos}
-                />
-                <Text
-                    style={styles.description}
-                >{post._description_post}</Text>
+                    //Left swipe
+                    if ((x.current - e.nativeEvent.pageX) > 100) {
+                        nextDetail()
+                    }
+
+                    //Right swipe
+                    if ((x.current - e.nativeEvent.pageX) < -100) {
+                        previousDetail()
+                    }
+                    
+                }}
+            >
+                <View
+                    style={{borderColor: '#ffb5a7', borderBottomWidth: 10}}
+                >
+                    <Image
+                        source={{uri:global.urlAPI+dataUser._pseudo_user+'/'+photos[index]._id_post+'/'+photos[index]._link_photo}}
+                        style={{width:imageWidth*ratio, height:imageHeight*ratio}}
+                        resizeMode='contain'
+                    />
+                </View>
+                {isPostLoading ? <Text>'Loading Location...'</Text> : 
+                <View style={styles.viewLoc}>
+                    <Image
+                        source={require('../assets/Location.png')}
+                        style={styles.logos}
+                    />
+                    <Text
+                        style={styles.localisation}
+                    >{post._localisation_post}</Text>
+                </View>
+                }
+
+                {isPostLoading ? <Text>'Loading Description...'</Text> : 
+                <View style={styles.viewDesc}>
+                    <Image 
+                        source={require('../assets/Description.png')}
+                        style={styles.logos}
+                    />
+                    <Text
+                        style={styles.description}
+                    >{post._description_post}</Text>
+                </View>
+                }
             </View>
-            }
-        </View>
+        </ScrollView>
     );
 }
 
@@ -130,6 +147,7 @@ const styles = StyleSheet.create({
         width: '90%'
     },
 
+    // Images
     logos: {
         height: 50,
         width: 50
