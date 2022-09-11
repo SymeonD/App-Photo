@@ -34,7 +34,6 @@ const DetailPhoto = ({route, navigation}) => {
             setImageWidth(width);
             setRatio(Math.min(Dimensions.get('window').height / height , Dimensions.get('window').width / width))
         })
-        console.log(ratio)
     }, [index])
 
     function closeDetail() {

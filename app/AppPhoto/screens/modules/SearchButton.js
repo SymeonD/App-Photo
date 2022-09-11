@@ -35,7 +35,6 @@ export default function SearchButton(props) {
 
     useEffect(() => {
         firstLoad.current ? firstLoad.current=false : setSearching(!searching)
-        console.log(firstLoad)
         /*     animation
         setTimeout(() => setSearching(!searching), 100)
         Animated.timing(sizeAnimation, {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TextInput, Image, Vibration, FlatList, TouchableOpacity, Animated, Alert, ScrollView, RefreshControl, Dimensions, KeyboardAvoidingView } from "react-native";
+import { View, Text, StyleSheet, TextInput, Image, Vibration, FlatList, TouchableOpacity, Animated, Alert, ScrollView, RefreshControl, Dimensions, KeyboardAvoidingView, Button, PermissionsAndroid } from "react-native";
 //import { TextInput } from "react-native-paper";
 import { Modal } from "../components/Modal";
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -7,6 +7,8 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import SearchButton from './modules/SearchButton.js';
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+import Geolocation from 'react-native-geolocation-service';
 
 function UserPage({route, navigation}){
 
@@ -546,10 +548,14 @@ function UserPage({route, navigation}){
                                 >
                                     Location
                                 </Text>
-                                <TextInput
-                                    placeholder='Today was a lovely day, i met whales as you can see.'
-                                    onChangeText={(description) => setDescriptionPost(description)}
-                                    style={PopupStyles.textDescription}
+                                <Button
+                                    title={'Get location'}
+                                    onPress={() => {
+                                        console.log('position ici: ')
+                                        PermissionsAndroid.check('android.permission.ACCESS_COARSE_LOCATION')
+                                        PermissionsAndroid.check('android.permission.ACCESS_FINE_LOCATION')
+                                        Geolocation.getCurrentPosition((position) => console.log('position: '+position))
+                                    }}
                                 />
                             </View>
                             
