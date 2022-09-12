@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TextInput, Image, Vibration, FlatList, TouchableOpacity, Animated, Alert, ScrollView, RefreshControl, Dimensions, KeyboardAvoidingView, Button, PermissionsAndroid } from "react-native";
 //import { TextInput } from "react-native-paper";
 import { Modal } from "../components/Modal";
+import {HERE_API_KEY} from "../App";
 import { launchImageLibrary } from 'react-native-image-picker';
 
 import SearchButton from './modules/SearchButton.js';
@@ -30,6 +31,10 @@ function UserPage({route, navigation}){
     const [descriptionPost, setDescriptionPost] = useState('');
 
     const [flatListLayout, setFlatListLayout] = useState(null);
+
+    //Location used in createPost
+    const locationPost = '';
+    const [isLoadingLocation, setLoadingLocation] = useState(true);
 
     //Profile Pic change
     const [imageReload, setImageReload] = useState(false);
@@ -318,6 +323,70 @@ function UserPage({route, navigation}){
                 console.log('The patch issued an error : '+e)})
     }
 
+    function setLocation(){
+        let latitude = 0;
+        let longitude = 0;
+
+        PermissionsAndroid.check('android.permission.ACCESS_COARSE_LOCATION')
+            .then((responseCoarse) => {
+                if(responseCoarse !== true){
+                    PermissionsAndroid.request(
+                        PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+                        {
+                            title: "Location access",
+                            message:
+                            "In order to auto fill location we need" +
+                            "your approbation.",
+                            buttonNeutral: "Ask Me Later",
+                            buttonNegative: "Cancel",
+                            buttonPositive: "OK"
+                        }
+                    )
+                }else{
+                    PermissionsAndroid.check('android.permission.ACCESS_FINE_LOCATION')
+                    .then((responseFine) => {
+                        if(responseFine !== true){                            
+                            PermissionsAndroid.request(
+                                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                                {
+                                    title: "Location access",
+                                    message:
+                                    "In order to auto fill location we need" +
+                                    "your approbation.",
+                                    buttonNeutral: "Ask Me Later",
+                                    buttonNegative: "Cancel",
+                                    buttonPositive: "OK"
+                                }
+                            )
+                        }else{
+                            Geolocation.getCurrentPosition((position) => {
+                                latitude = position.coords.latitude
+                                longitude = position.coords.longitude
+                                setLoadingLocation(false)
+                                console.log('position: '+latitude+','+longitude)
+                            })      
+                            let url = `https://reverse.geocoder.ls.hereapi.com/6.2/reversegeocode.json?apiKey=${HERE_API_KEY}&mode=retrieveAddresses&prox=${latitude},${longitude}`; 
+                            isLoadingLocation ? '' : 
+                                fetch(url, {method:'GET'})
+                                    .then((res) => res.json())
+                                    .then((resJson) => {
+                                        if (resJson
+                                            && resJson.Response
+                                            && resJson.Response.View
+                                            && resJson.Response.View[0]
+                                            && resJson.Response.View[0].Result
+                                            && resJson.Response.View[0].Result[0]) {
+                                            console.log(resJson.Response.View[0].Result[0].Location.Address.Label)
+                                        } else {
+                                            console.log('not found')
+                                        }
+                                    })
+                        }
+                    })
+                }
+            })
+    }
+
     return (
         <View 
             style={{flex: 1, flexDirection: "column", backgroundColor: "#f8edeb"}}
@@ -551,10 +620,7 @@ function UserPage({route, navigation}){
                                 <Button
                                     title={'Get location'}
                                     onPress={() => {
-                                        console.log('position ici: ')
-                                        PermissionsAndroid.check('android.permission.ACCESS_COARSE_LOCATION')
-                                        PermissionsAndroid.check('android.permission.ACCESS_FINE_LOCATION')
-                                        Geolocation.getCurrentPosition((position) => console.log('position: '+position))
+                                        setLocation()
                                     }}
                                 />
                             </View>
