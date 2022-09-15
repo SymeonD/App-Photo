@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 //import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useSpring, animated, config } from "@react-spring/native";
-import svg from 'react-native-svg';
+import  Svg, { Stop, Defs, LinearGradient } from 'react-native-svg';
 
 function ConnectionScreen({navigation}) {
     const [pseudoConnect, setPseudoConnect] = useState('');
@@ -279,23 +279,37 @@ function ConnectionScreen({navigation}) {
                 style={styles.image} 
                 source={require("../assets/log2.png")}
             />
-
-            <svg viewBox="0 0 600 600" className="wheel" width="600">
-                <defs>
-                    <radialGradient id="radial-gradient" cx="10%" fx="10%" fr="0%" r="80%">
-                    <stop offset="20%" stop-color="#5568C3" />
-                    <stop offset="95%" stop-color="#27336F" />
-                    </radialGradient>
-                </defs>
-
-                {
-                    // <Lines />
-                    
-                }
-                <g transform="translate(0,0)">
-                    <animated.path class="blob-gradient" d={svg} />
-                </g>
-            </svg>
+            
+            <View
+                style={{alignItems:'center', justifyContent: 'center'}}
+            >
+                <Svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 500 500"
+                    style={{
+                        opacity: 1,
+                        height: 200,
+                        width: 200,
+                    }}
+                >
+                    <Defs>
+                    <LinearGradient id="a" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <Stop
+                        offset="0%"
+                        style={{
+                            stopColor: "#eecda3",
+                        }}
+                        />
+                        <Stop
+                        offset="100%"
+                        style={{
+                            stopColor: "#ef629f",
+                        }}
+                        />
+                    </LinearGradient>
+                    </Defs>
+                </Svg>
+            </View>
             
             {isUserExisting != false ? 
             <Text style={{color:'#ed2f2f', marginBottom: 5}}>
