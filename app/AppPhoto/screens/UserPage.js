@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TextInput, Image, Vibration, FlatList, TouchableOpacity, Animated, Alert, ScrollView, RefreshControl, Dimensions, KeyboardAvoidingView, Button, PermissionsAndroid } from "react-native";
 //import { TextInput } from "react-native-paper";
 import { Modal } from "../components/Modal";
-import {HERE_API_KEY} from "../App";
 import { launchImageLibrary } from 'react-native-image-picker';
 
 import SearchButton from './modules/SearchButton.js';
@@ -12,6 +11,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Geolocation from 'react-native-geolocation-service';
 
 function UserPage({route, navigation}){
+
+    //HERE API KEY for geocoding
+    const HERE_API_KEY="7s-KY9LUN6upBN2-XZVY75QNwlV0p6fvj-Pi8Wcvvgs"
+
+    const [userCoordinates, setUserCoordinates] = useState({latitude: 0, longitude: 0});
+
+    const [userLocationState, setUserLocationState] = useState();
 
     const id_user = route.params.id; //User of the page showing != global user (user logged)
     
@@ -215,9 +221,10 @@ function UserPage({route, navigation}){
     function createPost(descriptionPost, user_pseudo){
         let today = new Date()
         var postInformations = new FormData();
+        let userLocationCity = userLocationState.city
         postInformations.append('description', descriptionPost)
         postInformations.append('id_user', dataUser._id_user)
-        postInformations.append('localisation', "Dans le camion")
+        postInformations.append('localisation', userLocationCity)
         postInformations.append('date', today.toLocaleDateString('en-GB', {year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'))
 
         fetch(global.urlAPI+"post", {
@@ -324,12 +331,10 @@ function UserPage({route, navigation}){
     }
 
     function setLocation(){
-        let latitude = 0;
-        let longitude = 0;
-
         PermissionsAndroid.check('android.permission.ACCESS_COARSE_LOCATION')
             .then((responseCoarse) => {
                 if(responseCoarse !== true){
+                    //Get location permission
                     PermissionsAndroid.request(
                         PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
                         {
@@ -341,11 +346,16 @@ function UserPage({route, navigation}){
                             buttonNegative: "Cancel",
                             buttonPositive: "OK"
                         }
-                    )
+                    ).then((succcess) => {
+                        if(succcess === 'granted'){
+                            setLocation()
+                        }
+                    })
                 }else{
                     PermissionsAndroid.check('android.permission.ACCESS_FINE_LOCATION')
                     .then((responseFine) => {
-                        if(responseFine !== true){                            
+                        if(responseFine !== true){             
+                            //Get location permission               
                             PermissionsAndroid.request(
                                 PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
                                 {
@@ -357,26 +367,31 @@ function UserPage({route, navigation}){
                                     buttonNegative: "Cancel",
                                     buttonPositive: "OK"
                                 }
-                            )
+                            ).then((succcess) => {
+                                if(succcess === 'granted'){
+                                    setLocation()
+                                }
+                            })
                         }else{
+                            //Get location
+                            setLoadingLocation(true)
                             Geolocation.getCurrentPosition((position) => {
-                                latitude = position.coords.latitude
-                                longitude = position.coords.longitude
+                                let latitudeUser = position.coords.latitude
+                                let longitudeUser = position.coords.longitude
+                                setUserCoordinates({latitude: latitudeUser, longitude: longitudeUser})
                                 setLoadingLocation(false)
-                                console.log('position: '+latitude+','+longitude)
-                            })      
-                            let url = `https://reverse.geocoder.ls.hereapi.com/6.2/reversegeocode.json?apiKey=${HERE_API_KEY}&mode=retrieveAddresses&prox=${latitude},${longitude}`; 
+                            })
+
                             isLoadingLocation ? '' : 
-                                fetch(url, {method:'GET'})
+                                fetch(`https://revgeocode.search.hereapi.com/v1/revgeocode?apiKey=${HERE_API_KEY}&at=${userCoordinates.latitude},${userCoordinates.longitude}`, {method:'GET'})
                                     .then((res) => res.json())
                                     .then((resJson) => {
                                         if (resJson
-                                            && resJson.Response
-                                            && resJson.Response.View
-                                            && resJson.Response.View[0]
-                                            && resJson.Response.View[0].Result
-                                            && resJson.Response.View[0].Result[0]) {
-                                            console.log(resJson.Response.View[0].Result[0].Location.Address.Label)
+                                            && resJson.items
+                                            && resJson.items.length > 0
+                                            && resJson.items[0].address
+                                            && resJson.items[0].address.city) {
+                                            setUserLocationState(resJson.items[0].address)
                                         } else {
                                             console.log('not found')
                                         }
@@ -610,19 +625,25 @@ function UserPage({route, navigation}){
 
                             {/* Location */}
                             <View
-                                style={PopupStyles.viewDescription}
+                                style={PopupStyles.viewLocation}
                             >
                                 <Text
                                     style={{marginTop:10, alignSelf:'center', fontSize:20, marginBottom:10}}
                                 >
                                     Location
                                 </Text>
-                                <Button
-                                    title={'Get location'}
-                                    onPress={() => {
-                                        setLocation()
-                                    }}
-                                />
+
+                                <TouchableOpacity
+                                    onPress={() => setLocation()}
+                                    style={PopupStyles.btnQuickLocation}
+                                >
+                                    <Text>Quick location {userLocationState == null ? (isLoadingLocation ? 'Loading' : null) : ': '+userLocationState.city} </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity>
+                                    <Text
+                                        style={PopupStyles.btnMapLocation}
+                                    >Open location map</Text>
+                                </TouchableOpacity>
                             </View>
                             
                         </Modal.Body>  
@@ -802,6 +823,22 @@ const PopupStyles = StyleSheet.create({
         borderColor: '#ffffff'
     },
 
+    btnQuickLocation: {
+        height:50,
+        width:'80%',
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius:25,
+        marginTop: 20,
+        marginBottom: 15,
+        backgroundColor: "#ffb5a7"
+    },
+
+    btnMapLocation: {
+        height:30,
+        color: '#f9dcc4'
+    },
+
     btnPost:{
         height:50,
         width:'80%',
@@ -825,6 +862,12 @@ const PopupStyles = StyleSheet.create({
     viewDescription: {
         width: '80%',
         height: 200,
+    },
+
+    viewLocation: {
+        width: '100%',
+        height: 200,
+        alignItems: 'center',
     },
 
     scrollPost: {

@@ -106,7 +106,7 @@ export default function SearchButton(props) {
             style={[
                 SearchStyle.ViewSearch
                 ,{
-                width: searching ? '95%' : null, //Set width of the view depending on the keyboard state
+                width: searching ? '90%' : null, //Set width of the view depending on the keyboard state
                 height: searching ? 50 : '13%', //Set height of the view depending on the keyboard state
                 transform: [
                     //Shake animation
