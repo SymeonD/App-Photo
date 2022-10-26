@@ -88,6 +88,8 @@ function ConnectionScreen({navigation}) {
         userCredentials.append('pseudo', pseudo);
         userCredentials.append('password', password);
 
+        console.log(global.urlAPI)
+
         fetch(global.urlAPI+"connect", {
             method:'POST', 
             headers: {

@@ -40,7 +40,7 @@ function UserPage({route, navigation}){
 
     //Location used in createPost
     const locationPost = '';
-    const [isLoadingLocation, setLoadingLocation] = useState(true);
+    const [isLoadingLocation, setLoadingLocation] = useState(false);
 
     //Profile Pic change
     const [imageReload, setImageReload] = useState(false);
@@ -393,6 +393,7 @@ function UserPage({route, navigation}){
                                             && resJson.items[0].address.city) {
                                             setUserLocationState(resJson.items[0].address)
                                         } else {
+                                            setUserLocationState({city: 'not found'})
                                             console.log('not found')
                                         }
                                     })
